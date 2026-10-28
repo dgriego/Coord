@@ -1,0 +1,682 @@
+<title>Coord Blueprint</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of plan "sheets", like a spec binder; diagrams break wider where needed */
+:root {
+  --paper: #f4f5f1;
+  --sheet: #ffffff;
+  --ink: #1d2622;
+  --muted: #5c6862;
+  --rule: #d9ddd6;
+  --brass: #8a6a2c;
+  --sage: #4f6f5e;
+  --sage-soft: #e3ebe5;
+  --brass-soft: #f1e9d8;
+  --clay-soft: #efe2dc;
+  --clay: #9b5a43;
+  --display: "Bodoni Moda", "Didot", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131916; --sheet: #1b2320; --ink: #e6ebe7; --muted: #9aa8a0; --rule: #2f3a35;
+    --brass: #d1ad67; --sage: #8fb8a1; --sage-soft: #23332b; --brass-soft: #332b1c;
+    --clay-soft: #382621; --clay: #e09a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131916; --sheet: #1b2320; --ink: #e6ebe7; --muted: #9aa8a0; --rule: #2f3a35;
+  --brass: #d1ad67; --sage: #8fb8a1; --sage-soft: #23332b; --brass-soft: #332b1c;
+  --clay-soft: #382621; --clay: #e09a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--display); font-weight: 500; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; letter-spacing: -0.01em; }
+h2 { font-size: 26px; line-height: 1.2; }
+h3 { font-size: 15px; font-weight: 700; margin: 0; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); }
+.lede { color: var(--muted); max-width: 64ch; font-size: 17px; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+
+header { display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.titleblock { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--rule); background: var(--sheet); }
+.titleblock div { padding: 10px 14px; border-right: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; }
+.titleblock div:last-child { border-right: 0; }
+.titleblock span { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.titleblock b { font-weight: 600; font-size: 14px; }
+
+section.sheet { background: var(--sheet); border: 1px solid var(--rule); padding: 28px clamp(18px, 3vw, 32px); display: flex; flex-direction: column; gap: 20px; }
+.sheet-head { display: flex; flex-direction: column; gap: 6px; }
+
+/* Decisions */
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.decisions div { background: var(--sheet); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.decisions .mono { color: var(--brass); }
+
+/* Personas */
+.personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.persona { border-top: 3px solid var(--sage); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.persona.out { border-top-color: var(--brass); }
+.persona .who { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.persona .size { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.persona ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
+.tag { font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border-radius: 3px; background: var(--sage-soft); color: var(--sage); margin-left: 4px; white-space: nowrap; }
+.tag.later { background: var(--brass-soft); color: var(--brass); }
+
+/* Scope */
+.scope { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.tier { padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--paper); min-width: 0; }
+.tier.mvp { background: var(--sage-soft); }
+.tier ul { margin: 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 3px; }
+.tier .label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+/* Item hub diagram */
+.hub { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; }
+.hub-center { border: 2px solid var(--ink); padding: 18px; text-align: center; display: flex; flex-direction: column; gap: 8px; background: var(--sheet); }
+.hub-center h3 { font-family: var(--display); font-size: 24px; font-weight: 500; }
+.components { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.comp { display: flex; justify-content: space-between; gap: 10px; border: 1px dashed var(--rule); padding: 6px 10px; font-size: 13px; }
+.comp .mono { color: var(--muted); }
+.hub-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.node { border: 1px solid var(--rule); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; position: relative; }
+.node b { font-weight: 600; }
+.node.client { border-left: 3px solid var(--sage); }
+.node.vendor { border-left: 3px solid var(--clay); }
+.node.contractor { border-left: 3px solid var(--brass); }
+.hub-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.hub-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+
+/* Lifecycle */
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.step { font-family: var(--mono); font-size: 12px; padding: 5px 9px; border: 1px solid var(--rule); background: var(--paper); white-space: nowrap; }
+.step.money { background: var(--sage-soft); border-color: transparent; color: var(--sage); }
+.step.vendor { background: var(--clay-soft); border-color: transparent; color: var(--clay); }
+.arrow { color: var(--muted); font-size: 12px; }
+.branches { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--muted); align-items: center; }
+
+/* Architecture */
+.stack { display: flex; flex-direction: column; gap: 6px; }
+.layer { display: grid; grid-template-columns: 170px 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.layer > div { background: var(--sheet); padding: 10px 14px; font-size: 14px; min-width: 0; }
+.layer > div:first-child { font-weight: 700; background: var(--paper); }
+.layer .cache { color: var(--sage); }
+.layer.head > div { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 400; background: var(--paper); padding-block: 6px; }
+.budgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.budget { border-left: 2px solid var(--brass); padding: 4px 0 4px 12px; display: flex; flex-direction: column; }
+.budget b { font-family: var(--display); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.budget span { font-size: 13px; color: var(--muted); }
+.callout { background: var(--clay-soft); color: var(--ink); padding: 12px 16px; font-size: 14px; }
+.callout b { color: var(--clay); }
+
+/* Milestones */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.ms { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 16px; padding: 14px 0; border-top: 1px solid var(--rule); align-items: start; }
+.ms:first-child { border-top: 0; }
+.ms .id { font-family: var(--display); font-size: 28px; line-height: 1; color: var(--brass); }
+.ms.now .id { color: var(--sage); }
+.ms h3 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ms p { font-size: 14px; }
+.ms .exit { font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--rule); padding-left: 12px; }
+.ms .exit b { color: var(--ink); font-weight: 600; }
+.now-pill { font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border-radius: 10px; background: var(--sage); color: var(--sheet); font-weight: 500; letter-spacing: 0.04em; }
+
+/* Pricing */
+.pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.plan { border: 1px solid var(--rule); padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+.plan.featured { border: 2px solid var(--sage); }
+.plan .price { font-family: var(--display); font-size: 36px; line-height: 1; font-variant-numeric: tabular-nums; }
+.plan .price small { font-family: var(--body); font-size: 14px; color: var(--muted); }
+
+.compliance { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.compliance div { display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
+
+footer { font-size: 13px; color: var(--muted); text-align: center; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); }
+.tab { font: inherit; font-weight: 600; font-size: 15px; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; color: var(--muted); cursor: pointer; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brass); }
+.tab:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.tab-panel { display: flex; flex-direction: column; gap: 28px; }
+.done-pill { font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border-radius: 10px; background: var(--brass-soft); color: var(--brass); font-weight: 500; letter-spacing: 0.04em; }
+
+/* Glossary */
+.gloss-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.gloss-search { flex: 1 1 240px; height: 40px; padding: 0 12px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); font: inherit; border-radius: 4px; }
+.gloss-search:focus { outline: 2px solid var(--brass); outline-offset: -1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13px; padding: 5px 11px; border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--sage); border-color: var(--sage); color: var(--sheet); }
+.gloss-count { font-size: 13px; color: var(--muted); }
+.gloss-group { display: flex; flex-direction: column; }
+.gloss-group h3 { font-family: var(--display); font-weight: 500; font-size: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+.gloss-group dl { margin: 0; display: grid; grid-template-columns: minmax(150px, 220px) 1fr; }
+.gloss-group dt, .gloss-group dd { padding: 12px 0; border-bottom: 1px solid var(--rule); margin: 0; }
+.gloss-group dt { font-weight: 700; padding-right: 16px; }
+.gloss-group dt .abbr { display: block; font-family: var(--mono); font-size: 11.5px; font-weight: 400; color: var(--brass); }
+.gloss-group dd { min-width: 0; }
+.gloss-group dd .app { display: block; font-size: 13px; color: var(--sage); margin-top: 4px; }
+.gloss-empty { color: var(--muted); padding: 12px 0; }
+@media (max-width: 760px) {
+  .gloss-group dl { grid-template-columns: 1fr; }
+  .gloss-group dt { border-bottom: 0; padding-bottom: 2px; }
+  .gloss-group dd { padding-top: 0; }
+}
+
+@media (max-width: 760px) {
+  .hub { grid-template-columns: 1fr; }
+  .layer { grid-template-columns: 1fr; }
+  .layer.head { display: none; }
+  .ms { grid-template-columns: 48px 1fr; }
+  .ms .exit { grid-column: 2; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Build plan · Rev A · Oct 2026</span>
+    <h1>Coord Blueprint</h1>
+    <p class="lede">Design management software for interior design studios of 1–10 people: proposals, purchase orders, schedules, time and billing in one fast web app. This is the full plan at a glance, from who it's for to what gets built first.</p>
+    <div class="titleblock">
+      <div><span>Market</span><b>US interior design studios</b></div>
+      <div><span>First target</span><b>1–10 people</b></div>
+      <div><span>Baseline to beat</span><b>DesignSmart</b></div>
+      <div><span>Accounting</span><b>QuickBooks Online</b></div>
+      <div><span>Progress</span><b>M0 + M1 done · M2 next</b></div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Blueprint sections">
+    <button class="tab" role="tab" id="tab-plan" aria-controls="plan" aria-selected="true">Plan</button>
+    <button class="tab" role="tab" id="tab-glossary" aria-controls="glossary" aria-selected="false" tabindex="-1">Glossary</button>
+  </div>
+
+  <div class="tab-panel" id="plan" role="tabpanel" aria-labelledby="tab-plan">
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Decisions made</span>
+      <h2>What's settled</h2>
+    </div>
+    <div class="decisions">
+      <div><span class="mono">D1 · Accounting</span><p>QuickBooks owns the books. We make the documents and sync them over.</p></div>
+      <div><span class="mono">D2 · Approvals</span><p>No formal submittal log. A light approval step for CFAs, shop drawings and slabs.</p></div>
+      <div><span class="mono">D3 · US only</span><p>USD, US sales tax, money stored in cents.</p></div>
+      <div><span class="mono">D4 · Payments</span><p>Stripe Connect. Studios get paid directly; we never hold funds.</p></div>
+      <div><span class="mono">D5 · Receiving</span><p>Warehouse receiving and damage claims are in. Inventory accounting is out.</p></div>
+      <div><span class="mono">D6 · Share links</span><p>Clients, vendors and contractors use secure links, with no accounts.</p></div>
+      <div><span class="mono">D7 · Simplicity</span><p>Everything included, no add-on modules. Advanced features appear only when turned on.</p></div>
+      <div><span class="mono">D8 · Design tools</span><p>Integrate with mood-board and floor-plan tools. We only build the product clipper.</p></div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Who it's for</span>
+      <h2>Personas and what they need first</h2>
+      <p class="muted">Green tags are in the first release (MVP). Gold tags come later.</p>
+    </div>
+    <div class="personas">
+      <div class="persona">
+        <div class="who"><h3>Maya, solo principal</h3><span class="size">1–3 people</span></div>
+        <ul>
+          <li>Clip products into a project room <span class="tag">MVP</span></li>
+          <li>Proposal link, client approves and pays deposit <span class="tag">MVP</span></li>
+          <li>Approved items become POs in one click <span class="tag">MVP</span></li>
+          <li>Time tracking from her phone <span class="tag">MVP</span></li>
+          <li>Sync to QuickBooks with no double entry <span class="tag">MVP</span></li>
+        </ul>
+      </div>
+      <div class="persona">
+        <div class="who"><h3>Diane, studio owner</h3><span class="size">5–10 people</span></div>
+        <ul>
+          <li>Roles that hide margins from juniors <span class="tag">MVP</span></li>
+          <li>Profit per project <span class="tag">MVP</span></li>
+          <li>Branded documents and studio defaults <span class="tag">MVP</span></li>
+          <li>PO approval limits <span class="tag later">Later</span></li>
+          <li>Staff utilization <span class="tag later">Later</span></li>
+        </ul>
+      </div>
+      <div class="persona">
+        <div class="who"><h3>Jordan, senior designer</h3><span class="size">Runs 3–8 projects</span></div>
+        <ul>
+          <li>One view of phase, tasks and late orders <span class="tag">MVP</span></li>
+          <li>Proposal revisions with history <span class="tag">MVP</span></li>
+          <li>Approval requests for CFAs and shop drawings <span class="tag">MVP</span></li>
+          <li>Issue schedules with changes marked <span class="tag">MVP</span></li>
+          <li>Site visits and punch lists <span class="tag later">Later</span></li>
+        </ul>
+      </div>
+      <div class="persona">
+        <div class="who"><h3>Priya, junior designer</h3><span class="size">Sourcing and data entry</span></div>
+        <ul>
+          <li>Paste a URL, get a filled-in item <span class="tag">MVP</span></li>
+          <li>Spreadsheet-style editing of many items <span class="tag">MVP</span></li>
+          <li>Find vendors by category <span class="tag">MVP</span></li>
+          <li>See only her tasks and allowed fields <span class="tag">MVP</span></li>
+        </ul>
+      </div>
+      <div class="persona">
+        <div class="who"><h3>Linda, studio manager</h3><span class="size">Procurement and books</span></div>
+        <ul>
+          <li>Board of open and overdue POs <span class="tag">MVP</span></li>
+          <li>Vendors post ship dates through a link <span class="tag">MVP</span></li>
+          <li>Warehouse receiving with photos <span class="tag">MVP</span></li>
+          <li>Deposits, retainers, vendor bills to QuickBooks <span class="tag">MVP</span></li>
+          <li>AR aging <span class="tag later">Later</span></li>
+        </ul>
+      </div>
+      <div class="persona out">
+        <div class="who"><h3>Outside parties</h3><span class="size">Share links only</span></div>
+        <ul>
+          <li><b>Client:</b> approve, comment, e-sign, pay <span class="tag">MVP</span></li>
+          <li><b>Vendor:</b> acknowledge PO, ship date, tracking <span class="tag">MVP</span></li>
+          <li><b>Contractor:</b> latest schedule on a phone <span class="tag">MVP</span></li>
+          <li><b>Client:</b> project status page <span class="tag later">Later</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Core idea</span>
+      <h2>Enter an item once, use it everywhere</h2>
+      <p class="muted">Every item feeds the client proposal, the vendor POs and the contractor schedule. Sent documents keep a copy as of the day they went out, so later edits never change them.</p>
+    </div>
+    <div class="hub">
+      <div class="hub-side">
+        <div class="node client"><b>Proposal</b><span class="muted">Client sees one line, at client price: Custom sofa, $14,850</span></div>
+        <div class="node client"><b>Invoice</b><span class="muted">Deposit and balance, synced to QuickBooks</span></div>
+        <div class="node"><b>Tasks</b><span class="muted">"Order approved items", "Chase acknowledgment"</span></div>
+      </div>
+      <div class="hub-center">
+        <span class="eyebrow">Item · Living Room</span>
+        <h3>Custom sofa, COM</h3>
+        <div class="components">
+          <div class="comp"><span>Frame and labor · Workroom A</span><span class="mono">$6,200</span></div>
+          <div class="comp"><span>Fabric, 14 yd · Fabric House B</span><span class="mono">$2,380</span></div>
+          <div class="comp"><span>Freight, receiving, install</span><span class="mono">$650</span></div>
+        </div>
+        <span class="muted" style="font-size:13px">Cost $9,230 · 60% markup · fabric ships to Workroom A</span>
+      </div>
+      <div class="hub-side">
+        <div class="node vendor"><b>PO 1042 · Workroom A</b><span class="muted">Frame and labor, at cost</span></div>
+        <div class="node vendor"><b>PO 1043 · Fabric House B</b><span class="muted">14 yd, CFA required, ship to Workroom A</span></div>
+        <div class="node contractor"><b>Schedule entry</b><span class="muted">For specified items, such as sconce tag L-1 on the lighting schedule</span></div>
+      </div>
+    </div>
+    <div class="hub-legend">
+      <span><i style="background:var(--sage)"></i>Client sees client price</span>
+      <span><i style="background:var(--clay)"></i>Vendor sees cost, never client price</span>
+      <span><i style="background:var(--brass)"></i>Contractor sees specs, no prices</span>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Item lifecycle</span>
+      <h2>From draft to installed</h2>
+      <p class="muted">Each stage is set by actions in the app, not typed in. An item is only as far along as its slowest part, so the sofa isn't "shipped" until both POs ship.</p>
+    </div>
+    <div class="flow">
+      <span class="step">Draft</span><span class="arrow">→</span>
+      <span class="step">Proposed</span><span class="arrow">→</span>
+      <span class="step money">Approved</span><span class="arrow">→</span>
+      <span class="step money">Deposit paid</span><span class="arrow">→</span>
+      <span class="step vendor">Ordered</span><span class="arrow">→</span>
+      <span class="step vendor">Acknowledged</span><span class="arrow">→</span>
+      <span class="step vendor">In production</span><span class="arrow">→</span>
+      <span class="step vendor">Shipped</span><span class="arrow">→</span>
+      <span class="step">Received</span><span class="arrow">→</span>
+      <span class="step">Delivered</span><span class="arrow">→</span>
+      <span class="step">Installed</span>
+    </div>
+    <div class="branches">
+      <span>Side paths:</span>
+      <span class="step">Rejected</span><span class="step">Backordered</span><span class="step">Damaged</span><span class="step">Cancelled</span>
+      <span>· An open approval (CFA, shop drawing) blocks ordering.</span>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Release plan</span>
+      <h2>What ships when</h2>
+    </div>
+    <div class="scope">
+      <div class="tier mvp">
+        <div class="label"><h3>MVP</h3><span class="mono">Replaces DesignSmart</span></div>
+        <ul>
+          <li>Projects, rooms, phases, tasks, templates</li>
+          <li>Items, pricing engine, COM, product clipper</li>
+          <li>Proposals, e-sign, deposits by card or ACH</li>
+          <li>POs, order tracking, warehouse receiving</li>
+          <li>Schedules with revisions and contractor link</li>
+          <li>Approvals for CFAs and shop drawings</li>
+          <li>Time, invoices, retainers, QuickBooks sync</li>
+          <li>Vendors, CSV import, branded PDFs</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <div class="label"><h3>v1.1</h3><span class="mono">Growing studios</span></div>
+        <ul>
+          <li>PO approval limits and reports</li>
+          <li>Site visits and punch lists</li>
+          <li>Gmail and Outlook threads per project</li>
+          <li>Client status page</li>
+          <li>Cost-plus and percent-of-purchase fees</li>
+          <li>Mood-board and design-tool integrations</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <div class="label"><h3>v2</h3><span class="mono">10–50 people</span></div>
+        <ul>
+          <li>Xero support</li>
+          <li>AI spec extraction from tear sheets</li>
+          <li>Shared vendor directory</li>
+          <li>Lead pipeline and engagement letters</li>
+          <li>Full offline sync</li>
+          <li>Approval chains, per-project permissions</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Speed</span>
+      <h2>How it stays fast</h2>
+      <p class="muted">Each layer keeps a copy close to the user and is told exactly when that copy is out of date.</p>
+    </div>
+    <div class="budgets">
+      <div class="budget"><b>&lt;100 ms</b><span>Moving between screens</span></div>
+      <div class="budget"><b>&lt;50 ms</b><span>An edit appears on screen</span></div>
+      <div class="budget"><b>&lt;1.5 s</b><span>First load, and a client link on a phone</span></div>
+      <div class="budget"><b>60 fps</b><span>Scrolling a 1,000-item grid</span></div>
+    </div>
+    <div class="stack">
+      <div class="layer head"><div>Layer</div><div>What runs here</div><div>What it caches</div></div>
+      <div class="layer"><div>Browser</div><div>React app, prefetch on hover, instant edits</div><div class="cache">Every record viewed, kept in the browser and refreshed in the background</div></div>
+      <div class="layer"><div>Live updates</div><div>One event stream per studio</div><div class="cache">Tells browsers which records changed</div></div>
+      <div class="layer"><div>CDN</div><div>App files, product images, share pages</div><div class="cache">Images resized once; share pages cleared when a document changes</div></div>
+      <div class="layer"><div>API</div><div>Typed routes, pricing engine, permission checks</div><div class="cache">Dashboard and report totals, keyed by studio and version</div></div>
+      <div class="layer"><div>Database</div><div>Postgres with per-studio row security</div><div class="cache">Project totals updated with each change</div></div>
+      <div class="layer"><div>Workers</div><div>PDFs, emails, QuickBooks sync</div><div class="cache">Each PDF reused until its content changes</div></div>
+    </div>
+    <div class="callout"><b>Rule that can't break:</b> every cache is separated by studio and by permission level, so a cached view containing cost data can never be served to a client or a junior designer.</div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Milestones</span>
+      <h2>Build order</h2>
+      <p class="muted">Each milestone ends with something a beta studio can use, and must meet its exit test before the next one starts.</p>
+    </div>
+    <div class="timeline">
+      <div class="ms now">
+        <div class="id">M0</div>
+        <div><h3>Foundations <span class="done-pill">DONE</span></h3><p>Monorepo, sign-in, studios and invitations, roles, row security, audit log, live updates, design system, performance checks</p></div>
+        <div class="exit"><b>Exit:</b> sign up, create a studio, invite a teammate; the empty app meets its speed targets.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M1</div>
+        <div><h3>Catalog</h3><p>Clients, vendors, projects, rooms, items, COM parts, pricing engine, clipper, CSV import</p></div>
+        <div class="exit"><b>Exit:</b> a product clipped in under 10 seconds; every pricing test case passes.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M2</div>
+        <div><h3>Proposals and payments</h3><p>Proposal versions, client link, approve per line, e-sign, Stripe deposits</p></div>
+        <div class="exit"><b>Exit:</b> a client approves and pays end to end; automated tests show no cost leaks.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M3</div>
+        <div><h3>Procurement</h3><p>POs by vendor, vendor link, order board, follow-ups, receiving, vendor deposits and bills</p></div>
+        <div class="exit"><b>Exit:</b> the COM sofa produces 2 correct POs and its status reflects both.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M4</div>
+        <div><h3>Time and billing</h3><p>Timer, fees, reimbursables, invoices, retainers, QuickBooks sync</p></div>
+        <div class="exit"><b>Exit:</b> invoices and payments land correctly in QuickBooks with no duplicates.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M5</div>
+        <div><h3>Schedules and approvals</h3><p>Schedule types, tag codes (L-1, P-3), issued revisions, contractor link, approvals that block orders</p></div>
+        <div class="exit"><b>Exit:</b> a contractor sees the latest revision with changes marked, on a phone.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M6</div>
+        <div><h3>Project flow</h3><p>Phases from Consultation to Construction Administration, tasks tied to items, templates, "My day"</p></div>
+        <div class="exit"><b>Exit:</b> a project from a template is ready in under a minute.</div>
+      </div>
+      <div class="ms">
+        <div class="id">M7</div>
+        <div><h3>Beta hardening</h3><p>Imports from DesignSmart and Programa, profit report, accessibility, load and security review</p></div>
+        <div class="exit"><b>Exit:</b> 5 beta studios run real projects for 4 weeks.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Business</span>
+      <h2>Suggested pricing</h2>
+      <p class="muted">Every feature on every plan. Clients, vendors and contractors are always free. No platform fee on payments at launch.</p>
+    </div>
+    <div class="pricing">
+      <div class="plan"><h3>Solo</h3><div class="price">$59<small> /month</small></div><span class="muted">1 seat · unlimited projects and links</span></div>
+      <div class="plan featured"><h3>Studio</h3><div class="price">$149<small> /month</small></div><span class="muted">Up to 5 seats · roles, cost hiding, warehouse receiving</span></div>
+      <div class="plan"><h3>Studio Plus</h3><div class="price">$279<small> /month</small></div><span class="muted">Up to 10 seats · PO approvals, reports · $29 per extra seat</span></div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="eyebrow">Payments compliance</span>
+      <h2>What taking payments requires</h2>
+    </div>
+    <div class="compliance">
+      <div><h3>Card security (PCI)</h3><p class="muted">Card numbers stay inside Stripe's fields and never reach our servers.</p></div>
+      <div><h3>Money transmission</h3><p class="muted">Each studio is paid directly through Stripe Connect, so we never hold client funds.</p></div>
+      <div><h3>Identity and tax forms</h3><p class="muted">Stripe verifies each studio and issues 1099-K forms.</p></div>
+      <div><h3>Card fees to clients</h3><p class="muted">Capped by card networks and restricted in some states. Off by default; confirm rules with counsel.</p></div>
+      <div><h3>ACH timing</h3><p class="muted">Bank payments take days to settle. Shown as "processing" until they clear.</p></div>
+      <div><h3>Disputes</h3><p class="muted">Signed proposals and approvals are kept as evidence for chargebacks.</p></div>
+    </div>
+  </section>
+
+  </div>
+
+  <div class="tab-panel" id="glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden>
+    <section class="sheet">
+      <div class="sheet-head">
+        <span class="eyebrow">For people new to the trade</span>
+        <h2>Interior design glossary</h2>
+        <p class="muted">The words designers, vendors and contractors use every day, in plain language. Green notes say where each one shows up in the app.</p>
+      </div>
+      <div class="gloss-tools">
+        <input class="gloss-search" id="gloss-search" type="search" placeholder="Search terms, e.g. COM or markup" aria-label="Search the glossary">
+        <div class="chips" role="group" aria-label="Filter by topic">
+          <button class="chip" data-cat="all" aria-pressed="true">All</button>
+          <button class="chip" data-cat="process" aria-pressed="false">Process</button>
+          <button class="chip" data-cat="products" aria-pressed="false">Products and materials</button>
+          <button class="chip" data-cat="ordering" aria-pressed="false">Ordering and delivery</button>
+          <button class="chip" data-cat="documents" aria-pressed="false">Documents and drawings</button>
+          <button class="chip" data-cat="money" aria-pressed="false">Money and billing</button>
+        </div>
+      </div>
+      <span class="gloss-count" id="gloss-count" aria-live="polite"></span>
+
+      <div class="gloss-group" data-cat="process">
+        <h3>Process</h3>
+        <dl>
+          <dt>Consultation</dt><dd>The first paid meeting, where the designer learns the client's goals, budget, timeline and style, and walks the space.</dd>
+          <dt>Programming</dt><dd>Writing down what each room must do and hold: who uses it, what furniture it needs, storage, lighting. Usually part of the consultation phase.</dd>
+          <dt>Schematic design<span class="abbr">SD</span></dt><dd>The early concept phase: rough layouts, mood boards and overall direction, before specific products are chosen.</dd>
+          <dt>Design development<span class="abbr">DD</span></dt><dd>Turning the concept into real choices: exact furniture, fabrics, finishes, fixtures and their sizes. Most proposals are built here.<span class="app">In the app: the phase where items are added to rooms.</span></dd>
+          <dt>Construction documents<span class="abbr">CD</span></dt><dd>The finished drawings and schedules a contractor builds from.</dd>
+          <dt>Construction administration<span class="abbr">CA</span></dt><dd>The designer's work while building happens: site visits, answering contractor questions, checking work matches the plans.</dd>
+          <dt>FF&amp;E</dt><dd>Furniture, fixtures and equipment: the movable items in a project, as opposed to built-in construction.</dd>
+          <dt>Scope of work</dt><dd>The written list of what the designer will and won't do on a project. It sets what the fee covers.</dd>
+          <dt>Design agreement</dt><dd>The contract between designer and client covering scope, fees, deposits and terms. Also called a letter of agreement.</dd>
+          <dt>Site visit</dt><dd>A trip to the project to check progress, measure or meet trades.</dd>
+          <dt>Punch list</dt><dd>The list of small fixes left at the end of a job: a scratched table, a missing outlet cover, a crooked fixture.</dd>
+          <dt>Install day</dt><dd>The day furniture and accessories are delivered and placed, often staged so the client sees the room finished all at once. Also called a reveal.</dd>
+          <dt>Change order</dt><dd>A written change to work already agreed, usually with a new price or date, that the client signs.</dd>
+        </dl>
+      </div>
+
+      <div class="gloss-group" data-cat="products">
+        <h3>Products and materials</h3>
+        <dl>
+          <dt>Casegoods</dt><dd>Furniture made from hard materials with no upholstery: dressers, desks, nightstands, bookcases, dining tables.</dd>
+          <dt>Upholstery</dt><dd>Furniture covered in fabric or leather over padding: sofas, chairs, ottomans, headboards.</dd>
+          <dt>Soft goods</dt><dd>Fabric items made for a project: drapery, roman shades, pillows, bedding.</dd>
+          <dt>Workroom</dt><dd>A custom shop that builds upholstery, drapery or other soft goods to the designer's specifications.</dd>
+          <dt>Millwork</dt><dd>Custom woodwork built for the space: cabinets, built-in shelving, paneling, trim.</dd>
+          <dt>To the trade</dt><dd>Sold only to design professionals, not the public. Many high-end showrooms and vendors work this way.</dd>
+          <dt>Showroom</dt><dd>A vendor's display space where designers see and order products, often to the trade only.</dd>
+          <dt>Customer's own material<span class="abbr">COM</span></dt><dd>Fabric bought separately and shipped to the furniture maker to cover a piece. A custom sofa in COM fabric involves two vendors and two orders.<span class="app">In the app: one item with two parts that creates two purchase orders.</span></dd>
+          <dt>Customer's own leather<span class="abbr">COL</span></dt><dd>The same idea as COM, with leather instead of fabric.</dd>
+          <dt>Yardage</dt><dd>How many yards of fabric a piece needs. Furniture makers publish the yardage for each style.</dd>
+          <dt>Pattern repeat</dt><dd>The distance before a fabric's pattern repeats. Large repeats need extra yardage so the pattern lines up.</dd>
+          <dt>Railroaded</dt><dd>Fabric whose pattern runs along its length instead of across, so a long sofa can be covered without seams.</dd>
+          <dt>Double rubs</dt><dd>A measure of how well fabric resists wear. About 15,000 or more is typical for home seating.</dd>
+          <dt>Memo sample</dt><dd>A small cutting of fabric or material sent so the designer can see and feel it before ordering.</dd>
+          <dt>Strike-off</dt><dd>A test print of a custom fabric or wallcovering, sent to approve color before the full run is made.</dd>
+          <dt>Slab</dt><dd>One large piece of natural stone. Designers often choose the exact slab at the stone yard because every one looks different.</dd>
+          <dt>Drawdown</dt><dd>A paint sample brushed onto a card or wall to check the real color before painting.</dd>
+        </dl>
+      </div>
+
+      <div class="gloss-group" data-cat="ordering">
+        <h3>Ordering and delivery</h3>
+        <dl>
+          <dt>Purchase order<span class="abbr">PO</span></dt><dd>The document a designer sends a vendor saying exactly what to make or ship: item, size, finish, fabric, quantity, price and delivery address.<span class="app">In the app: created from approved items, one per vendor.</span></dd>
+          <dt>Acknowledgment</dt><dd>The vendor's reply confirming a PO: what they'll make, the price and the expected ship date. Errors get caught here.</dd>
+          <dt>Cutting for approval<span class="abbr">CFA</span></dt><dd>A small piece cut from the actual bolt of fabric for an order, sent to confirm color before the whole length is cut. Dye lots vary.<span class="app">In the app: an approval that blocks ordering until it's signed off.</span></dd>
+          <dt>Lead time</dt><dd>How long a vendor needs to make and ship an item. Custom pieces often take 8–16 weeks or longer.</dd>
+          <dt>Backorder</dt><dd>An item that's out of stock, so it ships later than promised.</dd>
+          <dt>Sidemark</dt><dd>The client or project name put on an order and its boxes so the warehouse knows whose it is.</dd>
+          <dt>Freight</dt><dd>The cost of shipping large items, usually by truck. Often charged separately from the product.</dd>
+          <dt>Crating</dt><dd>A wooden crate built around a fragile or valuable piece for shipping, with its own fee.</dd>
+          <dt>Receiving warehouse</dt><dd>A company that accepts deliveries for designers, inspects them for damage and stores them until install day. Also called a receiver.<span class="app">In the app: receiving records with photos and damage notes.</span></dd>
+          <dt>White-glove delivery</dt><dd>Delivery that includes bringing items inside, unpacking, assembling, placing them and taking the packaging away.</dd>
+          <dt>Damage claim</dt><dd>A request to the vendor or carrier to repair or replace something that arrived damaged.</dd>
+          <dt>Drop ship</dt><dd>When a vendor ships straight to the client's home instead of to the designer or warehouse.</dd>
+        </dl>
+      </div>
+
+      <div class="gloss-group" data-cat="documents">
+        <h3>Documents and drawings</h3>
+        <dl>
+          <dt>Proposal</dt><dd>The document listing the items a designer recommends, with prices for the client to approve and pay a deposit on.<span class="app">In the app: sent as a link where the client approves and pays.</span></dd>
+          <dt>Schedule</dt><dd>A table telling the contractor exactly what goes where: every light fixture, plumbing fitting, tile or paint color, with model numbers and locations.<span class="app">In the app: lighting, plumbing and finish schedules with revisions.</span></dd>
+          <dt>Tag</dt><dd>A short code like L-1 or P-3 that links an item on a schedule to its spot on a drawing.</dd>
+          <dt>Specification</dt><dd>The full description of a product: maker, model, size, finish and options. Often shortened to spec, as in "spec a fixture".</dd>
+          <dt>Tear sheet</dt><dd>A one-page product sheet from a vendor with a photo, dimensions and options. Also called a cut sheet.</dd>
+          <dt>Floor plan</dt><dd>A drawing of a room from above showing walls, doors and furniture layout.</dd>
+          <dt>Elevation</dt><dd>A flat drawing of one wall seen straight on, showing heights of cabinets, art, sconces and trim.</dd>
+          <dt>Reflected ceiling plan<span class="abbr">RCP</span></dt><dd>A drawing of the ceiling showing where lights, fans and vents go.</dd>
+          <dt>Shop drawing</dt><dd>A detailed drawing from a maker (like a millwork shop) showing exactly how they'll build a custom piece, sent for the designer's approval.</dd>
+          <dt>Submittal</dt><dd>On commercial jobs, the formal package of shop drawings, product data and samples a contractor sends for approval. Residential designers do the same thing less formally.</dd>
+          <dt>Mood board</dt><dd>A collage of images, colors and materials that shows the feeling of a design before specific products are chosen.</dd>
+          <dt>Revision</dt><dd>An updated version of a drawing or schedule. Changes are marked so the contractor can see what's different.</dd>
+        </dl>
+      </div>
+
+      <div class="gloss-group" data-cat="money">
+        <h3>Money and billing</h3>
+        <dl>
+          <dt>Net price</dt><dd>What the designer pays a vendor, after their trade discount. Also called trade price or cost.</dd>
+          <dt>MSRP</dt><dd>The manufacturer's suggested retail price: what the public would pay. Also called list price or retail.</dd>
+          <dt>Trade discount</dt><dd>The percentage off retail that vendors give designers, often 15–50%.</dd>
+          <dt>Markup</dt><dd>The amount added on top of cost to set the client's price. A 30% markup on a $1,000 lamp makes it $1,300.</dd>
+          <dt>Margin</dt><dd>The share of the selling price that's profit. Selling a $1,000 lamp for $1,300 is a 23% margin. Mixing up markup and margin is a common pricing mistake.</dd>
+          <dt>Flat fee</dt><dd>One agreed price for the design work, regardless of hours spent.</dd>
+          <dt>Hourly billing</dt><dd>Charging for design time by the hour, tracked and invoiced regularly.<span class="app">In the app: timers and time entries that flow onto invoices.</span></dd>
+          <dt>Cost-plus</dt><dd>Billing the client the designer's cost for products plus an agreed percentage.</dd>
+          <dt>Retainer</dt><dd>Money paid up front before work begins, then used up against later invoices.</dd>
+          <dt>Deposit</dt><dd>A part payment before an order is placed. Clients often pay 50–100% up front for custom items, and designers pay vendors around 50%.</dd>
+          <dt>Reimbursables</dt><dd>Out-of-pocket costs billed back to the client, such as mileage, printing, samples or travel.</dd>
+          <dt>Resale certificate</dt><dd>A state form that lets a designer buy products without paying sales tax, because tax is collected when they resell to the client.</dd>
+          <dt>Net 30</dt><dd>Payment terms meaning the invoice is due 30 days after it's issued.</dd>
+        </dl>
+      </div>
+      <p class="gloss-empty" id="gloss-empty" hidden>No terms match. Try a shorter word.</p>
+    </section>
+  </div>
+
+  <footer>Source: PLAN.md, Rev A. Figures in the sofa example are illustrative.</footer>
+</div>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('.tab')];
+  const show = (id) => {
+    tabs.forEach((t) => {
+      const on = t.getAttribute('aria-controls') === id;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => show(t.getAttribute('aria-controls')));
+    t.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      next.focus();
+      show(next.getAttribute('aria-controls'));
+    });
+  });
+  if (location.hash === '#glossary') show('glossary');
+
+  const search = document.getElementById('gloss-search');
+  const chips = [...document.querySelectorAll('.chip')];
+  const groups = [...document.querySelectorAll('.gloss-group')];
+  const count = document.getElementById('gloss-count');
+  const empty = document.getElementById('gloss-empty');
+  const total = document.querySelectorAll('.gloss-group dt').length;
+  let cat = 'all';
+
+  const apply = () => {
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    groups.forEach((g) => {
+      let inGroup = 0;
+      const catOk = cat === 'all' || g.dataset.cat === cat;
+      g.querySelectorAll('dt').forEach((dt) => {
+        const dd = dt.nextElementSibling;
+        const ok = catOk && (!q || (dt.textContent + ' ' + dd.textContent).toLowerCase().includes(q));
+        dt.hidden = dd.hidden = !ok;
+        if (ok) inGroup++;
+      });
+      g.hidden = inGroup === 0;
+      shown += inGroup;
+    });
+    empty.hidden = shown > 0;
+    count.textContent = shown === total ? total + ' terms' : shown + ' of ' + total + ' terms';
+  };
+  search.addEventListener('input', apply);
+  chips.forEach((c) => c.addEventListener('click', () => {
+    cat = c.dataset.cat;
+    chips.forEach((x) => x.setAttribute('aria-pressed', x === c));
+    apply();
+  }));
+  apply();
+})();
+</script>

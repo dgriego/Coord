@@ -1,0 +1,31 @@
+{
+  "name": "coord",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"npm run dev -w @coord/api\" \"npm run dev -w @coord/web\"",
+    "dev:api": "npm run dev -w @coord/api",
+    "dev:web": "npm run dev -w @coord/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "budget": "node scripts/check-budget.mjs",
+    "ci": "npm run typecheck && npm run test && npm run build && npm run budget",
+    "start": "npm start -w @coord/api",
+    "seed": "npm run seed -w @coord/api",
+    "build:vercel": "node scripts/build-vercel.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
