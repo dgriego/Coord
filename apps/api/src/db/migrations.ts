@@ -260,4 +260,155 @@ export const migrations: Migration[] = [
         CHECK (color IN ('marigold','persimmon','rosewater','orchid','cobalt','lagoon','fern','citrine'));
     `,
   },
+  {
+    // M2: proposals, client share links, e-signatures and deposit payments.
+    id: "0005_proposals",
+    sql: /* sql */ `
+      ALTER TABLE items DROP CONSTRAINT items_status_check;
+      ALTER TABLE items ADD CONSTRAINT items_status_check
+        CHECK (status IN ('draft','proposed','approved','rejected','deposit_paid','ordered','received','installed'));
+
+      -- Branding for documents, proposal defaults and the studio's Stripe account.
+      ALTER TABLE studios
+        ADD COLUMN address text NOT NULL DEFAULT '',
+        ADD COLUMN email text NOT NULL DEFAULT '',
+        ADD COLUMN phone text NOT NULL DEFAULT '',
+        ADD COLUMN deposit_bps integer NOT NULL DEFAULT 5000 CHECK (deposit_bps BETWEEN 0 AND 10000),
+        ADD COLUMN proposal_terms text NOT NULL DEFAULT '',
+        ADD COLUMN stripe_account_id text UNIQUE,
+        ADD COLUMN stripe_charges_enabled boolean NOT NULL DEFAULT false;
+
+      CREATE TABLE proposals (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        number integer NOT NULL,
+        title text NOT NULL,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE (studio_id, number)
+      );
+      CREATE INDEX proposals_project_idx ON proposals(project_id, number DESC);
+
+      -- A version is frozen once sent: lines, terms and tax are snapshots.
+      CREATE TABLE proposal_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        proposal_id uuid NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+        version integer NOT NULL,
+        status text NOT NULL DEFAULT 'draft'
+          CHECK (status IN ('draft','sent','partially_approved','approved','superseded')),
+        intro text NOT NULL DEFAULT '',
+        terms text NOT NULL DEFAULT '',
+        deposit_bps integer NOT NULL CHECK (deposit_bps BETWEEN 0 AND 10000),
+        client_name text NOT NULL DEFAULT '',
+        client_email text NOT NULL DEFAULT '',
+        sent_at timestamptz,
+        signed_name text,
+        signed_email text,
+        signed_at timestamptz,
+        signed_ip text,
+        signed_user_agent text,
+        signed_hash text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE (proposal_id, version)
+      );
+
+      CREATE TABLE proposal_lines (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        version_id uuid NOT NULL REFERENCES proposal_versions(id) ON DELETE CASCADE,
+        item_id uuid REFERENCES items(id) ON DELETE SET NULL,
+        sort integer NOT NULL DEFAULT 0,
+        room_name text NOT NULL DEFAULT '',
+        name text NOT NULL,
+        description text NOT NULL DEFAULT '',
+        dimensions text NOT NULL DEFAULT '',
+        finish text NOT NULL DEFAULT '',
+        image_url text NOT NULL DEFAULT '',
+        qty integer NOT NULL CHECK (qty >= 0),
+        unit text NOT NULL DEFAULT '',
+        unit_cost_cents bigint NOT NULL DEFAULT 0,
+        unit_price_cents bigint NOT NULL,
+        charges_cents bigint NOT NULL DEFAULT 0,
+        tax_cents bigint NOT NULL DEFAULT 0,
+        deposit_bps integer CHECK (deposit_bps BETWEEN 0 AND 10000),
+        decision text NOT NULL DEFAULT 'pending' CHECK (decision IN ('pending','approved','rejected')),
+        decided_at timestamptz,
+        client_note text NOT NULL DEFAULT ''
+      );
+      CREATE INDEX proposal_lines_version_idx ON proposal_lines(version_id, sort);
+      CREATE INDEX proposal_lines_item_idx ON proposal_lines(item_id);
+
+      -- Outside-party links (PLAN.md D6). The token is an HMAC of the id, so
+      -- nothing secret is stored and the studio can copy the link again.
+      CREATE TABLE share_links (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        audience text NOT NULL CHECK (audience IN ('client','vendor','contractor')),
+        proposal_id uuid REFERENCES proposals(id) ON DELETE CASCADE,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        last_viewed_at timestamptz,
+        revoked_at timestamptz
+      );
+      CREATE INDEX share_links_proposal_idx ON share_links(proposal_id);
+
+      -- Email codes and the short sessions they unlock, for approve, sign and pay.
+      CREATE TABLE share_codes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        link_id uuid NOT NULL REFERENCES share_links(id) ON DELETE CASCADE,
+        email text NOT NULL,
+        code_hash text NOT NULL,
+        attempts integer NOT NULL DEFAULT 0,
+        expires_at timestamptz NOT NULL,
+        used_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX share_codes_link_idx ON share_codes(link_id, created_at DESC);
+
+      CREATE TABLE share_sessions (
+        id text PRIMARY KEY,
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        link_id uuid NOT NULL REFERENCES share_links(id) ON DELETE CASCADE,
+        email text NOT NULL,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE payments (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        studio_id uuid NOT NULL REFERENCES studios(id) ON DELETE CASCADE,
+        project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        version_id uuid REFERENCES proposal_versions(id) ON DELETE SET NULL,
+        amount_cents bigint NOT NULL CHECK (amount_cents > 0),
+        currency text NOT NULL DEFAULT 'usd',
+        method text CHECK (method IN ('card','us_bank_account','check','wire','cash','other')),
+        status text NOT NULL CHECK (status IN ('pending','processing','succeeded','failed','canceled')),
+        note text NOT NULL DEFAULT '',
+        provider_session_id text UNIQUE,
+        provider_payment_id text,
+        recorded_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        paid_at timestamptz
+      );
+      CREATE INDEX payments_version_idx ON payments(version_id);
+      CREATE INDEX payments_project_idx ON payments(project_id, created_at DESC);
+
+      DO $$
+      DECLARE t text;
+      BEGIN
+        FOREACH t IN ARRAY ARRAY['proposals','proposal_versions','proposal_lines','share_links','share_codes','share_sessions','payments'] LOOP
+          EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO app_user', t);
+          EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+          EXECUTE format(
+            'CREATE POLICY studio_isolation ON %I USING (studio_id = app_current_studio()) WITH CHECK (studio_id = app_current_studio())',
+            t
+          );
+        END LOOP;
+      END $$;
+    `,
+  },
 ];

@@ -57,6 +57,8 @@ writeFileSync(
       routes: [
         { src: "/assets/(.*)", headers: { "cache-control": "public, max-age=31536000, immutable" }, continue: true },
         { src: "/api/(.*)", dest: "/api" },
+        // Client share pages are rendered by the API function.
+        { src: "/p/(.*)", dest: "/api" },
         { handle: "filesystem" },
         { src: "/(.*)", dest: "/index.html", headers: { "cache-control": "no-cache" } },
       ],

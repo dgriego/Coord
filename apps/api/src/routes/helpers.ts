@@ -1,12 +1,16 @@
 import type { Context } from "hono";
-import type { Env } from "../context.ts";
+import type { Deps, Env } from "../context.ts";
 import type { Tx } from "../db/client.ts";
 
 /** Bumps the studio's cache version and tells open clients what to refetch. */
 export function changed(c: Context<Env>, ...keys: string[][]) {
-  const { studioId } = c.var.session;
-  c.var.deps.cache.bump(studioId);
-  c.var.deps.bus.invalidate(studioId, ...keys, ["audit"]);
+  changedFor(c.var.deps, c.var.session.studioId, ...keys);
+}
+
+/** Like `changed`, for writes with no signed-in member (share links, webhooks). */
+export function changedFor(deps: Deps, studioId: string, ...keys: string[][]) {
+  deps.cache.bump(studioId);
+  deps.bus.invalidate(studioId, ...keys, ["audit"]);
 }
 
 /** Runs `fn` scoped to the signed-in user's studio (row-level security). */

@@ -21,6 +21,8 @@ import { Icon, type IconName } from "../ui/icons.tsx";
 import { ConfirmButton, Drawer, Labeled, MoneyInput, PercentInput } from "../ui/inputs.tsx";
 import { useToast } from "../ui/kit.tsx";
 import { ItemsSection } from "./Items.tsx";
+import { ProposalsPanel } from "./Proposals.tsx";
+import { proposalsQuery } from "../data/proposals.ts";
 
 const money = (c: number) => formatMoney(c).replace(/\.00$/, "");
 
@@ -100,6 +102,7 @@ export function ProjectPage({ projectId }: { projectId: string }) {
 
       <div className="page">
         <Tools p={p} />
+        <ProposalsPanel project={p} />
         <ItemsSection project={p} />
       </div>
 
@@ -112,7 +115,6 @@ function Tools({ p }: { p: ProjectDetail }) {
   const me = useMe();
   const budgetPct = p.budgetCents ? Math.round((p.proposedCents / p.budgetCents) * 100) : null;
   const soon: { title: string; icon: IconName; text: string }[] = [
-    { title: "Proposals", icon: "proposal", text: "Send items for approval and collect deposits. Coming in M2." },
     { title: "Orders", icon: "box", text: "Purchase orders and tracking, vendor by vendor. Coming in M3." },
     { title: "Schedules", icon: "schedule", text: "Lighting, plumbing and finish schedules for the contractor. Coming in M5." },
     { title: "To-dos", icon: "check", text: "Phase checklists tied to items. Coming in M6." },
@@ -146,6 +148,7 @@ function Tools({ p }: { p: ProjectDetail }) {
           <span className="muted small">{money(p.totals.profitCents)} on {money(p.totals.priceCents)} of product</span>
         </div>
       )}
+      <ProposalsTool p={p} />
       {soon.map((s) => (
         <div key={s.title} className="tool soon">
           <span className="icon-badge" style={{ background: "var(--surface-2)", color: "var(--muted)" }}><Icon name={s.icon} /></span>
@@ -154,6 +157,23 @@ function Tools({ p }: { p: ProjectDetail }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function ProposalsTool({ p }: { p: ProjectDetail }) {
+  const list = useQuery(proposalsQuery(p.id));
+  const paid = (list.data ?? []).reduce((s, x) => s + x.paidCents, 0);
+  const waiting = (list.data ?? []).filter((x) => x.status === "sent").length;
+  return (
+    <a className="tool" href="#proposals" onClick={(e) => { e.preventDefault(); document.getElementById("proposals")?.scrollIntoView({ behavior: "smooth" }); }}>
+      <span className="icon-badge"><Icon name="proposal" /></span>
+      <h3>Proposals</h3>
+      <span className="big">{list.data?.length ?? 0}</span>
+      <span className="muted small">
+        {waiting ? `${waiting} waiting on the client` : list.data?.length ? "Nothing waiting on the client" : "Send items for approval"}
+        {paid ? ` · ${money(paid)} in deposits` : ""}
+      </span>
+    </a>
   );
 }
 

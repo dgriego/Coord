@@ -18,6 +18,9 @@ import { HomePage } from "./pages/Home.tsx";
 import { ProjectPage } from "./pages/Project.tsx";
 import { clientsQuery, projectQuery, projectsQuery, vendorsQuery } from "./data/catalog.ts";
 import { ClientsPage } from "./pages/Clients.tsx";
+import { ProposalPage } from "./pages/Proposals.tsx";
+import { StudioSettingsPage } from "./pages/StudioSettings.tsx";
+import { paymentAccountQuery, proposalQuery, proposalsQuery, studioSettingsQuery } from "./data/proposals.ts";
 import { VendorsPage } from "./pages/Vendors.tsx";
 import { can } from "@coord/shared";
 
@@ -117,11 +120,37 @@ const projectRoute = createRoute({
   path: "/projects/$projectId",
   loader: ({ context, params }) => {
     void context.queryClient.prefetchQuery(projectQuery(params.projectId));
+    void context.queryClient.prefetchQuery(proposalsQuery(params.projectId));
     void context.queryClient.prefetchQuery(vendorsQuery);
   },
   component: function Project() {
     const { projectId } = projectRoute.useParams();
     return <ProjectPage key={projectId} projectId={projectId} />;
+  },
+});
+const proposalRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/projects/$projectId/proposals/$proposalId",
+  loader: ({ context, params }) => {
+    void context.queryClient.prefetchQuery(proposalQuery(params.proposalId));
+    void context.queryClient.prefetchQuery(projectQuery(params.projectId));
+  },
+  component: function Proposal() {
+    const { projectId, proposalId } = proposalRoute.useParams();
+    return <ProposalPage key={proposalId} projectId={projectId} proposalId={proposalId} />;
+  },
+});
+const studioSettingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/settings/studio",
+  validateSearch: (s: Record<string, unknown>): { stripe?: string } => (typeof s.stripe === "string" ? { stripe: s.stripe } : {}),
+  loader: ({ context }) => {
+    const me = context.queryClient.getQueryData(meQuery.queryKey);
+    void context.queryClient.prefetchQuery(studioSettingsQuery);
+    if (me && can(me.role, "payments.manage")) void context.queryClient.prefetchQuery(paymentAccountQuery);
+  },
+  component: function StudioSettings() {
+    return <StudioSettingsPage stripeReturn={studioSettingsRoute.useSearch().stripe === "return"} />;
   },
 });
 const clientsRoute = createRoute({
@@ -162,7 +191,7 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   inviteRoute,
   indexRoute,
-  appRoute.addChildren([projectsRoute, projectRoute, clientsRoute, vendorsRoute, timeRoute, teamRoute]),
+  appRoute.addChildren([projectsRoute, projectRoute, proposalRoute, clientsRoute, vendorsRoute, timeRoute, teamRoute, studioSettingsRoute]),
 ]);
 
 export function makeRouter(queryClient: QueryClient) {

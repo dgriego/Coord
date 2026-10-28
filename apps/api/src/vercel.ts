@@ -8,9 +8,14 @@ import { openDatabase } from "./db/client.ts";
 import { PostgresBus } from "./events.ts";
 import { StudioCache } from "./cache.ts";
 import { RateLimiter } from "./rate-limit.ts";
+import { mailerFromEnv } from "./mailer.ts";
+import { StripeProvider } from "./payments/provider.ts";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("Set DATABASE_URL in the Vercel project settings.");
+const linkSecret = process.env.LINK_SECRET;
+if (!linkSecret) throw new Error("Set LINK_SECRET (a long random string) in the Vercel project settings.");
+const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } = process.env;
 
 const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 const appOrigin = process.env.APP_ORIGIN ?? (productionHost ? `https://${productionHost}` : "http://localhost:3000");
@@ -25,7 +30,9 @@ const app = createApp({
   // instance's write. The browser cache carries the speed instead.
   cache: new StudioCache(0),
   loginLimiter: new RateLimiter(10, 15 * 60 * 1000),
-  config: { appOrigin, secureCookies: true },
+  mailer: mailerFromEnv(process.env),
+  payments: STRIPE_SECRET_KEY && STRIPE_WEBHOOK_SECRET ? new StripeProvider(STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) : null,
+  config: { appOrigin, secureCookies: true, linkSecret },
 });
 
 export default getRequestListener(app.fetch);

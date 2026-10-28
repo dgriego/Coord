@@ -12,6 +12,20 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web"],
       "port": 5173
+    },
+    {
+      "name": "api-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve", "-w", "@coord/api"],
+      "env": { "PORT": "8791", "APP_ORIGIN": "http://localhost:5174" },
+      "port": 8791
+    },
+    {
+      "name": "web-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web"],
+      "env": { "WEB_PORT": "5174", "API_PORT": "8791" },
+      "port": 5174
     }
   ]
 }

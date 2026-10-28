@@ -75,6 +75,7 @@ export function AppLayout() {
       list.push({ id: "new-project", label: "Start a new project", run: () => void navigate({ to: "/projects", search: { new: true } }) });
     }
     for (const n of NAV) list.push({ id: `go-${n.to}`, label: `Go to ${n.label}`, run: () => void navigate({ to: n.to }) });
+    list.push({ id: "studio-settings", label: "Studio settings and payments", run: () => void navigate({ to: "/settings/studio" }) });
     if (can(me.role, "team.manage")) {
       list.push({ id: "invite", label: "Invite a teammate", run: () => void navigate({ to: "/settings/team", search: { invite: true } }) });
     }
@@ -141,6 +142,7 @@ export function AppLayout() {
                   <div className="muted small">{ROLE_LABELS[me.role]} at {me.studio.name}</div>
                 </div>
                 <Link to="/settings/team" role="menuitem">Team and roles</Link>
+                <Link to="/settings/studio" role="menuitem">Studio settings</Link>
                 <button role="menuitem" onClick={() => setPaletteOpen(true)}>Search or jump to</button>
                 <button role="menuitem" onClick={() => void signOut()}>Sign out</button>
               </div>

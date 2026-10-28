@@ -9,6 +9,10 @@ import { invitationRoutes } from "./routes/invitations.ts";
 import { clientRoutes, vendorRoutes } from "./routes/directory.ts";
 import { itemRoutes, projectRoutes, roomRoutes } from "./routes/projects.ts";
 import { clipRoutes } from "./routes/clip.ts";
+import { proposalRoutes } from "./routes/proposals.ts";
+import { shareApiRoutes, sharePageRoutes } from "./routes/share.ts";
+import { paymentAccountRoutes, studioSettingsRoutes } from "./routes/studio.ts";
+import { devCheckoutRoutes, stripeWebhookRoutes } from "./routes/stripe.ts";
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -50,6 +54,8 @@ export function createApp(deps: Deps) {
   app.get("/api/health", (c) => c.json({ ok: true }));
   app.route("/api/auth", authRoutes);
   app.route("/api/me", meRoutes);
+  app.route("/api/studio/settings", studioSettingsRoutes);
+  app.route("/api/studio/payments", paymentAccountRoutes);
   app.route("/api/studio", teamRoutes);
   app.route("/api/invitations", invitationRoutes);
   app.route("/api/clients", clientRoutes);
@@ -58,6 +64,12 @@ export function createApp(deps: Deps) {
   app.route("/api/rooms", roomRoutes);
   app.route("/api/items", itemRoutes);
   app.route("/api/clip", clipRoutes);
+  app.route("/api/proposals", proposalRoutes);
+  app.route("/api/share", shareApiRoutes);
+  app.route("/api/stripe/webhook", stripeWebhookRoutes);
+  app.route("/api/dev/checkout", devCheckoutRoutes);
+  // Client-facing proposal pages, rendered here rather than by the web app.
+  app.route("/p", sharePageRoutes);
 
   // Live invalidations for the signed-in user's current studio (PLAN.md 9.2).
   app.get("/api/events", requireSession, (c) => {

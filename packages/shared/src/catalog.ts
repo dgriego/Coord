@@ -76,12 +76,13 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   complete: "Complete",
 };
 
-// Statuses after "approved" are set by proposals and POs in M2 and M3.
+// Proposals set "proposed" through "deposit_paid" (M2); POs set the rest (M3).
 export const ITEM_STATUSES = [
   "draft",
   "proposed",
   "approved",
   "rejected",
+  "deposit_paid",
   "ordered",
   "received",
   "installed",
@@ -92,6 +93,7 @@ export const ITEM_STATUS_LABELS: Record<ItemStatus, string> = {
   proposed: "Proposed",
   approved: "Approved",
   rejected: "Rejected",
+  deposit_paid: "Deposit paid",
   ordered: "Ordered",
   received: "Received",
   installed: "Installed",

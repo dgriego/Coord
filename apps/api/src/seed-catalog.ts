@@ -3,8 +3,10 @@
 // illustrations in apps/web/public/samples.
 
 import type { ItemStatus, ProjectColor, ProjectPhase, VendorCategory } from "@coord/shared";
-import type { Db } from "./db/client.ts";
-import { clients, itemComponents, items, projects, rooms, vendors } from "./db/schema.ts";
+import { and, eq } from "drizzle-orm";
+import type { Database, Db } from "./db/client.ts";
+import { clients, itemComponents, items, projects, proposalLines, proposals, proposalVersions, rooms, shareLinks, studios, vendors } from "./db/schema.ts";
+import { DEV_LINK_SECRET, shareUrl, snapshotItems } from "./proposals/model.ts";
 
 const img = (name: string) => `/samples/${name}.svg`;
 
@@ -290,4 +292,54 @@ export async function seedCatalog(sys: Db, studioId: string, small = false) {
       );
     }
   }
+}
+
+/**
+ * Hollis's branding and terms, plus one proposal already sent to the
+ * Hendersons, so the client link can be tried right away. Returns its link.
+ */
+export async function seedProposal(db: Database, studioId: string, appOrigin: string): Promise<string | null> {
+  await db.sys
+    .update(studios)
+    .set({
+      address: "2810 Routh St, Suite 200\nDallas, TX 75201",
+      email: "studio@hollis.test",
+      phone: "(214) 555-0100",
+      proposalTerms:
+        "A deposit is due on approval. Custom and made-to-order items are ordered only after the deposit clears, and their deposits are non-refundable once ordered.\n\nThe balance, freight and installation are invoiced before delivery. Lead times are vendor estimates.",
+    })
+    .where(eq(studios.id, studioId));
+
+  return db.withStudio(studioId, async (tx) => {
+    const [project] = await tx
+      .select({ p: projects, exempt: clients.taxExempt, clientName: clients.name, clientEmail: clients.email })
+      .from(projects)
+      .innerJoin(clients, eq(clients.id, projects.clientId))
+      .where(eq(projects.name, "Henderson Residence"));
+    if (!project) return null;
+    const proposed = await tx.select({ id: items.id }).from(items).where(and(eq(items.projectId, project.p.id), eq(items.status, "proposed")));
+    const tax = { taxRateBps: project.p.taxRateBps, taxCharges: project.p.taxCharges, taxExempt: project.exempt };
+    const lines = await snapshotItems(tx, project.p.id, tax, proposed.map((i) => i.id));
+    const sentAt = new Date(Date.now() - 2 * DAY);
+    const [p] = await tx.insert(proposals).values({ studioId, projectId: project.p.id, number: 1, title: "Living, dining and primary suite", createdAt: sentAt, updatedAt: sentAt }).returning();
+    const [v] = await tx
+      .insert(proposalVersions)
+      .values({
+        studioId,
+        proposalId: p!.id,
+        version: 1,
+        status: "sent",
+        depositBps: 5000,
+        intro: "Kate and James, here are the pieces we talked through on Thursday. Approve what you love, decline anything that isn't right, and we'll keep looking.",
+        terms: (await tx.select({ t: studios.proposalTerms }).from(studios).where(eq(studios.id, studioId)))[0]!.t,
+        clientName: project.clientName,
+        clientEmail: project.clientEmail,
+        sentAt,
+        createdAt: sentAt,
+      })
+      .returning();
+    await tx.insert(proposalLines).values(lines.map((l, sort) => ({ ...l, studioId, versionId: v!.id, sort })));
+    const [link] = await tx.insert(shareLinks).values({ studioId, audience: "client", proposalId: p!.id, createdAt: sentAt }).returning();
+    return shareUrl(appOrigin, DEV_LINK_SECRET, link!.id);
+  });
 }

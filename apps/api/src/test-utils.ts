@@ -4,6 +4,8 @@ import { openDatabase, type Database } from "./db/client.ts";
 import { EventBus } from "./events.ts";
 import { StudioCache } from "./cache.ts";
 import { RateLimiter } from "./rate-limit.ts";
+import { MemoryMailer } from "./mailer.ts";
+import { SimulatedProvider } from "./payments/provider.ts";
 
 export const ORIGIN = "http://app.test";
 
@@ -11,15 +13,19 @@ export async function makeTestApp() {
   const db = await openDatabase({});
   const bus = new EventBus();
   const cache = new StudioCache();
+  const mailer = new MemoryMailer();
+  const payments = new SimulatedProvider(ORIGIN);
   const app = createApp({
     db,
     bus,
     cache,
     loginLimiter: new RateLimiter(5, 60_000),
     // Cheap scrypt so tests stay fast; production uses DEFAULT_SCRYPT.
-    config: { appOrigin: ORIGIN, secureCookies: false, scrypt: { N: 1024, r: 8, p: 1 } },
+    config: { appOrigin: ORIGIN, secureCookies: false, scrypt: { N: 1024, r: 8, p: 1 }, linkSecret: "test-link-secret" },
+    mailer,
+    payments,
   });
-  return { app, db, bus, cache };
+  return { app, db, bus, cache, mailer, payments };
 }
 
 type App = Awaited<ReturnType<typeof makeTestApp>>["app"];

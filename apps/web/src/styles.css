@@ -375,3 +375,27 @@ tr.flash td { animation: flash 1.4s var(--ease); }
   .phases { grid-template-columns: repeat(5, minmax(56px, 1fr)); overflow-x: auto; }
   .phase-step span { font-size: 11px; }
 }
+
+/* Proposals */
+.status-deposit_paid, .status-succeeded { --c-soft: var(--fern-soft); }
+.status-sent, .status-pending, .status-processing { --c-soft: var(--marigold-soft); }
+.status-partially_approved { --c-soft: var(--lagoon-soft); }
+.status-superseded, .status-canceled { --c-soft: var(--surface-2); }
+.status-failed { --c-soft: var(--danger-soft); }
+tr.clickable { position: relative; }
+.row-link { color: inherit; text-decoration: none; }
+.row-link::after { content: ""; position: absolute; inset: 0; }
+.pick-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--rule); border-radius: var(--radius); cursor: pointer; }
+.pick-row:has(input:checked) { border-color: var(--c, var(--accent)); background: var(--c-soft, var(--accent-soft)); }
+.pick-row input { width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+.next-step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); background: var(--surface); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); box-shadow: var(--shadow); border-left: 5px solid var(--c, var(--accent)); }
+.next-step h3 { font-size: 17px; }
+.title-input { font: inherit; font-family: var(--font-display); font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; line-height: 1.08; letter-spacing: -0.015em; border: 0; border-bottom: 2px dashed transparent; background: transparent; color: var(--ink); width: 100%; padding: 0; }
+.title-input:hover { border-bottom-color: var(--rule-strong); }
+.title-input:focus { outline: none; border-bottom-color: var(--c, var(--focus)); }
+.proposal-sum { display: grid; gap: 4px; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--rule); max-width: 380px; margin-left: auto; font-variant-numeric: tabular-nums; font-size: 14px; }
+.proposal-sum div { display: flex; justify-content: space-between; gap: var(--space-4); }
+.proposal-sum .grand { font-weight: 800; font-size: 17px; border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 2px; }
+.signature { font-family: "Segoe Script", "Brush Script MT", cursive; font-size: 30px; line-height: 1.2; }
+.banner { background: var(--accent-soft); padding: var(--space-3) var(--space-4); border-radius: var(--radius); }
+.prewrap { white-space: pre-wrap; margin: 0; }

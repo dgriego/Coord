@@ -360,8 +360,9 @@ M2 comes before M3 because the proposal-to-deposit path is what studios pay for 
 
 1. **Product name and domain.** Named **Coord** (Oct 27, 2026). Domain still to pick.
 2. **Which accounting platforms at launch:** QBO only (recommended), or QBO Desktop too? Desktop needs a separate sync connector. Before M4.
-3. **Sales-tax calculation:** rates entered by the studio (MVP) or automated (Stripe Tax or Avalara). Automated costs money per transaction. Before M2.
-4. **Which states to verify surcharging rules for first:** the states the beta studios are in. Before M2.
+3. **Sales-tax calculation:** rates entered by the studio (MVP) or automated (Stripe Tax or Avalara). Automated costs money per transaction. **M2 shipped with studio-entered rates per project**; revisit automation after beta.
+4. **Which states to verify surcharging rules for first:** the states the beta studios are in. **M2 has no card surcharge** (the default-off setting from section 11.5); the payment page says ACH is free instead. Add the setting once counsel confirms the beta studios' states.
 5. **Beta studios:** recruit 5, ideally 3 solo and 2 with 4–10 people, current DesignSmart or spreadsheet users. Before M1 ends.
-6. **E-sign:** is the built-in click-to-sign enough, or do studios expect DocuSign? Ask beta studios. Before M2.
+6. **E-sign:** is the built-in click-to-sign enough, or do studios expect DocuSign? Ask beta studios. **M2 shipped the built-in click-to-sign** (typed name, verified email, time, IP, document hash); still ask beta studios.
 7. **Fee types:** confirm that flat fee plus hourly covers most beta studios before deferring cost-plus. Before M4.
+8. **Proposal PDF:** M2's client page doubles as the printable document (print or save as PDF from the browser). Server-rendered PDF files for attachments (section 8, Playwright worker) are still to build, likely alongside PO PDFs in M3.

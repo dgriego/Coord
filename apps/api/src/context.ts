@@ -6,6 +6,8 @@ import type { Bus } from "./events.ts";
 import type { StudioCache } from "./cache.ts";
 import type { RateLimiter } from "./rate-limit.ts";
 import type { ScryptCost } from "./auth/crypto.ts";
+import type { Mailer } from "./mailer.ts";
+import type { PaymentProvider } from "./payments/provider.ts";
 import { loadSession, SESSION_COOKIE, type SessionInfo } from "./auth/sessions.ts";
 import { forbidden, HttpError } from "./http.ts";
 
@@ -14,6 +16,10 @@ export interface Config {
   appOrigin: string;
   secureCookies: boolean;
   scrypt?: ScryptCost;
+  /** Signs share-link tokens. Changing it breaks every link already sent. */
+  linkSecret: string;
+  /** Local dev and tests only: return email codes in responses so no inbox is needed. */
+  exposeDevCodes?: boolean;
 }
 
 export interface Deps {
@@ -22,6 +28,9 @@ export interface Deps {
   cache: StudioCache;
   loginLimiter: RateLimiter;
   config: Config;
+  mailer: Mailer;
+  /** Null when payments aren't configured (production without Stripe keys). */
+  payments: PaymentProvider | null;
 }
 
 export type Env = {

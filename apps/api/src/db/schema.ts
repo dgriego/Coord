@@ -10,7 +10,19 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { ItemStatus, PricingMode, ProjectColor, ProjectPhase, ProjectStatus, Role, VendorCategory } from "@coord/shared";
+import type {
+  ItemStatus,
+  LineDecision,
+  PaymentMethod,
+  PaymentStatus,
+  PricingMode,
+  ProjectColor,
+  ProjectPhase,
+  ProjectStatus,
+  ProposalStatus,
+  Role,
+  VendorCategory,
+} from "@coord/shared";
 
 // Typed view of the tables. The SQL in migrations.ts is the source of truth for
 // constraints and row-level security; keep the two in step.
@@ -28,6 +40,13 @@ export const users = pgTable("users", {
 export const studios = pgTable("studios", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  address: text("address").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  depositBps: integer("deposit_bps").notNull().default(5000),
+  proposalTerms: text("proposal_terms").notNull().default(""),
+  stripeAccountId: text("stripe_account_id"),
+  stripeChargesEnabled: boolean("stripe_charges_enabled").notNull().default(false),
   createdAt,
 });
 
@@ -187,6 +206,112 @@ export const itemComponents = pgTable("item_components", {
   sort: integer("sort").notNull().default(0),
 });
 
+export const proposals = pgTable("proposals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  number: integer("number").notNull(),
+  title: text("title").notNull(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt,
+  updatedAt,
+});
+
+export const proposalVersions = pgTable("proposal_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  proposalId: uuid("proposal_id").notNull().references(() => proposals.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  status: text("status").$type<ProposalStatus>().notNull().default("draft"),
+  intro: str("intro"),
+  terms: str("terms"),
+  depositBps: integer("deposit_bps").notNull(),
+  clientName: str("client_name"),
+  clientEmail: str("client_email"),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  signedName: text("signed_name"),
+  signedEmail: text("signed_email"),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+  signedIp: text("signed_ip"),
+  signedUserAgent: text("signed_user_agent"),
+  signedHash: text("signed_hash"),
+  createdAt,
+});
+
+export const proposalLines = pgTable("proposal_lines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  versionId: uuid("version_id").notNull().references(() => proposalVersions.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").references(() => items.id, { onDelete: "set null" }),
+  sort: integer("sort").notNull().default(0),
+  roomName: str("room_name"),
+  name: text("name").notNull(),
+  description: str("description"),
+  dimensions: str("dimensions"),
+  finish: str("finish"),
+  imageUrl: str("image_url"),
+  qty: integer("qty").notNull(),
+  unit: str("unit"),
+  unitCostCents: money("unit_cost_cents"),
+  unitPriceCents: bigint("unit_price_cents", { mode: "number" }).notNull(),
+  chargesCents: money("charges_cents"),
+  taxCents: money("tax_cents"),
+  depositBps: integer("deposit_bps"),
+  decision: text("decision").$type<LineDecision>().notNull().default("pending"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  clientNote: str("client_note"),
+});
+
+export const shareLinks = pgTable("share_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  audience: text("audience").$type<"client" | "vendor" | "contractor">().notNull(),
+  proposalId: uuid("proposal_id").references(() => proposals.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt,
+  lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+export const shareCodes = pgTable("share_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  linkId: uuid("link_id").notNull().references(() => shareLinks.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt,
+});
+
+export const shareSessions = pgTable("share_sessions", {
+  // SHA-256 of the cookie token, like sessions.
+  id: text("id").primaryKey(),
+  studioId: studioId(),
+  linkId: uuid("link_id").notNull().references(() => shareLinks.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt,
+});
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studioId: studioId(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  versionId: uuid("version_id").references(() => proposalVersions.id, { onDelete: "set null" }),
+  amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
+  currency: text("currency").notNull().default("usd"),
+  method: text("method").$type<PaymentMethod>(),
+  status: text("status").$type<PaymentStatus>().notNull(),
+  note: str("note"),
+  providerSessionId: text("provider_session_id"),
+  providerPaymentId: text("provider_payment_id"),
+  recordedBy: uuid("recorded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt,
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+});
+
 export const schema = {
   users,
   studios,
@@ -200,4 +325,11 @@ export const schema = {
   rooms,
   items,
   itemComponents,
+  proposals,
+  proposalVersions,
+  proposalLines,
+  shareLinks,
+  shareCodes,
+  shareSessions,
+  payments,
 };

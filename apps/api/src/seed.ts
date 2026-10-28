@@ -12,7 +12,7 @@ import type { Role } from "@coord/shared";
 import { openDatabase } from "./db/client.ts";
 import { auditLog, invitations, memberships, studios, users } from "./db/schema.ts";
 import { hashPassword, newToken } from "./auth/crypto.ts";
-import { seedCatalog } from "./seed-catalog.ts";
+import { seedCatalog, seedProposal } from "./seed-catalog.ts";
 
 export const SEED_PASSWORD = "studio-dev-password";
 const APP_ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:5173";
@@ -291,6 +291,8 @@ console.log("Adding vendors, clients, projects and items…");
 await seedCatalog(sys, studioIds.get("Hollis Interiors")!);
 await seedCatalog(sys, studioIds.get("Fernwood Design Co.")!, true);
 await seedCatalog(sys, studioIds.get("Atelier Nine")!, true);
+console.log("Sending a sample proposal…");
+const proposalUrl = await seedProposal(db, studioIds.get("Hollis Interiors")!, APP_ORIGIN);
 
 await db.close();
 
@@ -305,3 +307,7 @@ console.table(
 );
 console.log("\nOpen invitations (try one in a private window to see the join flow):");
 for (const l of inviteLinks) console.log(`  ${l.role.padEnd(10)} ${l.email.padEnd(30)} ${l.url}`);
+if (proposalUrl) {
+  console.log("\nThe Hendersons' proposal, as the client sees it (local dev shows the email code on the page):");
+  console.log(`  ${proposalUrl}`);
+}

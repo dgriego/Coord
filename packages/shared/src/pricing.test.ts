@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseMoney, priceItem, type ComponentCost, type PricingInput } from "./pricing.ts";
+import { depositTotal, lineDeposit } from "./proposals.ts";
 
 const part = (netCostCents: number, extra: Partial<ComponentCost> = {}): ComponentCost => ({
   netCostCents,
@@ -119,5 +120,25 @@ describe("parseMoney", () => {
     expect(parseMoney("80")).toBe(8_000);
     expect(parseMoney("12.345")).toBeNull();
     expect(parseMoney("abc")).toBeNull();
+  });
+});
+
+describe("deposits", () => {
+  it("rounds half up at each line", () => {
+    expect(lineDeposit(64_950, 5000)).toBe(32_475);
+    expect(lineDeposit(1001, 5000)).toBe(501);
+    expect(lineDeposit(1000, 3333)).toBe(333);
+    expect(lineDeposit(1000, 0)).toBe(0);
+  });
+
+  it("counts every line not rejected before signing, and approved lines after", () => {
+    const lines = [
+      { totalCents: 1001, depositBps: 5000, decision: "approved" as const },
+      { totalCents: 1001, depositBps: 5000, decision: "pending" as const },
+      { totalCents: 5000, depositBps: 10_000, decision: "rejected" as const },
+    ];
+    // Rounded per line (501 + 501), not on the sum (1001).
+    expect(depositTotal(lines, false)).toBe(1002);
+    expect(depositTotal(lines, true)).toBe(501);
   });
 });
