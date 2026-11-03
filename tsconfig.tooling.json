@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["node"],
+    "tsBuildInfoFile": "node_modules/.cache/tsc/tooling.tsbuildinfo"
+  },
+  "include": ["*.config.ts"]
+}
