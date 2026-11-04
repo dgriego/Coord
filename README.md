@@ -34,6 +34,7 @@ Coord is built one small slice at a time. Each slice:
 | Functions of 40 lines or fewer, files of 250 or fewer                                                             | ESLint             |
 | `money` imports nothing; `domain` imports only `money`; UI never fetches; apps never import each other; no cycles | dependency-cruiser |
 | 100% coverage for `money` and `domain`, 90% elsewhere                                                             | Vitest             |
+| Every injected bug in `money` is caught (at least 95%, target 100%)                                               | Stryker            |
 | One formatting style                                                                                              | Prettier           |
 
 ## Layout

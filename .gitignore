@@ -6,3 +6,4 @@ dist/
 coverage/
 .vercel/
 .stryker-tmp/
+reports/

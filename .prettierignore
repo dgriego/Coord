@@ -2,3 +2,5 @@ coverage/
 dist/
 package-lock.json
 PLAN.md
+.stryker-tmp/
+reports/

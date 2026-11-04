@@ -19,6 +19,7 @@ export default defineConfig([
     rules: {
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/switch-exhaustiveness-check": "error",
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       // Small functions and files are easier to read than clever ones.
       "max-lines-per-function": ["error", { max: 40, skipBlankLines: true, skipComments: true }],
       "max-lines": ["error", { max: 250, skipBlankLines: true, skipComments: true }],

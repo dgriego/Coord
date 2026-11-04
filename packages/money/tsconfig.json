@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": [],
+    "tsBuildInfoFile": "../../node_modules/.cache/tsc/money.tsbuildinfo"
+  },
+  "include": ["src"]
+}
