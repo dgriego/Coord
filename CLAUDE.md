@@ -14,6 +14,8 @@ Coord is being rebuilt one slice at a time. Read these before starting work:
 2. Build and test it. `npm run ci` must pass.
 3. Demo it to the user. Ask before committing or pushing.
 
+Work happens directly on `main`.
+
 ## Keep the roadmap current
 
 The user tracks progress at https://claude.ai/artifact/TyvFjurV19Xc4WKEuRqaQy (artifact slug

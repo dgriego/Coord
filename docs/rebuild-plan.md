@@ -91,9 +91,9 @@ New requirements for the rebuild:
 | Storybook (web and React Native)     | Component gallery                             | Chromatic plus community                          | Larger maintainer base than Ladle                                                      |
 | ESLint, Prettier, dependency-cruiser | Code quality                                  | OpenJS / Prettier team / long-lived (since 2016)  | Proven. Biome was rejected for now: younger plugin ecosystem, and no boundaries plugin |
 
-## Repo layout (fresh start on this branch)
+## Repo layout (fresh start)
 
-- Tag the current `main` as `legacy-m2`. Delete `apps/*` and `packages/*` on this branch.
+- Tag the current `main` as `legacy-m2`. Delete `apps/*` and `packages/*`.
 - Port deliberately, through review, rewriting each piece in the new patterns:
   - the CSV parser;
   - the product-page parser, with the SSRF guard fixed (IPv6-mapped and NAT64 addresses, DNS pinning);
