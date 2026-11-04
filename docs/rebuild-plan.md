@@ -224,10 +224,11 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 - **One primitive:** `mulDiv(a, b, divisor, rounding)` computed with BigInt internally.
   - Rounding is half away from zero; credits are symmetric.
   - Markup = `mulDiv(cost, 1e6 + rate, 1e6)`. No float ever touches money.
-- **`allocate(total, weights)`** uses largest remainder, so the deposit and retainer split across lines always sums exactly.
+- **`allocate(total, weights)`** uses largest remainder, so tax or a discount split across lines always sums exactly.
 - **One `parseMoney`/`parseRate`/`parseQty`** for the web, the native app, the clipper and CSV import. Each has a table of accepted and rejected inputs ("1e3", "0x10", "1.250,00", 3 decimals, and so on). One `formatMoney` with a cached `Intl.NumberFormat`.
 - **`docs/money-policy.md`** (you approve it) records where rounding happens for each document. It also covers:
-  - whether deposits include tax and freight;
+  - how the optional contract deposit is calculated, applied and refunded;
+  - paying product proposals in full;
   - time billing increments, set per studio (1, 6 or 15 minutes), applied per entry;
   - how invoice time lines are summed per entry;
   - negative and credit lines;
@@ -235,7 +236,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 - **Tests:**
   - property tests (fast-check) against a BigInt rational reference;
   - golden fixture tables, including every boundary found in the audit, plus spreadsheets from beta studios;
-  - invariants after every API test: sum of lines = total; subtotal + tax = total; deposits allocated sum exactly; paid ≤ due, or else flagged;
+  - invariants after every API test: sum of lines = total; subtotal + tax = total; deposit applied plus refunds never exceeds the deposit paid; paid ≤ due, or else flagged;
   - **100% branch coverage** on `money` and `domain`;
   - **StrykerJS mutation score of at least 90%** on those packages.
 - **Database guards:**
@@ -310,6 +311,7 @@ A3 Invitations.
 A4 Studio settings and branding.
 A5 Audit log viewer.
 A6 📱 Devices: sign out this phone; account deletion (an Apple requirement).
+A7 Studio setup questions: how the studio charges, deposits and reimbursables (PLAN.md 6.10).
 
 **B. Directory**
 B1 Clients and contacts, including tax exempt status with a certificate.
@@ -329,10 +331,11 @@ D2 Client share portal and email code.
 D3 Approve or reject per line.
 D4 💰 E-sign: hash of the full document, a stored copy, the consent text.
 D5 💰 Proposal PDF.
+D6 💰 Contract: upload it, mark its fields, fill them in for each project and sign (PLAN.md 6.9).
 
 **E. Payments**
 E1 Connect onboarding.
-E2 💰 Deposit checkout: one open session, outbox.
+E2 💰 Checkout for a contract deposit or full payment on a product proposal: one open session, outbox.
 E3 💰 Webhook ingestion and ledger.
 E4 💰 Manual payments, refunds, disputes, ACH returns.
 E5 💰 Nightly reconciliation and the needs-review queue.
@@ -347,12 +350,13 @@ F5 💰 Vendor deposits and bills.
 **G. Time & Billing**
 G1 📱 Timer: start time held on the server, one running timer per user, live across devices, offline queue with idempotency.
 G2 📱 Manual entries and week view.
-G3 💰 Rates, fee types, billing increments.
-G4 💰 Reimbursables and expenses.
-G5 💰 Invoices: fees, time, product balances, retainers applied.
+G3 💰 Hourly rates and billing increments, plus flat fees for studios that use them.
+G4 💰 Reimbursables and expenses, for studios that turn them on.
+G5 💰 Invoices built from the studio's setup answers: billable time, flat fees, reimbursables, product changes, any deposit applied.
 G6 💰 Invoice portal, PDF, Stripe payment.
 G7 💰 QuickBooks Online sync, idempotent, with a sync log.
 G8 📱 Lock-screen timer: iOS Live Activity and Android ongoing notification.
+G9 Project hours and the "past the deposit" marker (PLAN.md 6.9).
 
 **H. Schedules & Approvals**
 H1 Schedule types and tag codes.

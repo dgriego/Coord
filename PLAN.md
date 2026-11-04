@@ -42,9 +42,11 @@ Priority: **M** = MVP, **L** = later.
 ### 3.1 Maya, solo principal (1–3 people)
 | Use case | Pri |
 |---|---|
+| Upload the studio's own contract once, and reuse it for each client by editing a few fields | M |
+| Add a new client, fill in the contract, and send it to sign and pay any deposit | M |
 | Create a project from a template (phases and tasks) in under a minute | M |
 | Clip products from vendor sites into a project room | M |
-| Build a proposal by room, send it as a link, client approves and pays the deposit online | M |
+| Build a product proposal by room, send it as a link, client approves and pays in full online | M |
 | Turn approved items into POs grouped by vendor with one click | M |
 | Track time from her phone between site visits and bill it on the next invoice | M |
 | See "what needs me today" across all projects | M |
@@ -59,7 +61,7 @@ Priority: **M** = MVP, **L** = later.
 | Approve POs above a set amount before they're sent | L |
 | Check utilization (billable versus non-billable hours by person) | L |
 | Brand documents with logo, colors and terms | M |
-| Set studio defaults: markup, deposit %, fee type, payment terms | M |
+| Set studio defaults: markup, whether to charge a deposit and at what %, fee type, payment terms | M |
 
 ### 3.3 Jordan, senior designer / PM
 | Use case | Pri |
@@ -91,6 +93,7 @@ Priority: **M** = MVP, **L** = later.
 ### 3.6 Outside parties (share links only)
 | Party | Use case | Pri |
 |---|---|---|
+| Client | Open the contract from a link, e-sign it and pay any deposit | M |
 | Client | View the proposal, approve or reject each item, comment, e-sign, pay by card or ACH | M |
 | Client | See a simple project status page (phase, upcoming milestones) | L |
 | Vendor | View the PO, acknowledge it, enter the ship date and tracking, upload an invoice | M |
@@ -103,15 +106,17 @@ Priority: **M** = MVP, **L** = later.
 ### MVP: the "replace DesignSmart" release
 - Studios, users, roles, invitations
 - Clients and contacts; vendors with categories and filters
+- Client onboarding: a reusable contract the studio uploads, with editable fields, e-sign on Coord, an optional deposit, and hours on the project with a marker for when billing passes the deposit (see 6.9)
 - Projects, rooms, phases, tasks (including tasks linked to items) and project templates
 - Items: clipper, images, the pricing engine, COM components
-- Proposals: versions, share link, approve or reject, e-sign, deposit payment
+- Product proposals: versions, share link, approve or reject, e-sign, payment in full
 - POs: generated from approved items, one per vendor; email or share link; vendor acknowledgment
 - Order tracking and receiving, including the warehouse
 - Schedules: lighting, plumbing, finishes, paint, hardware, custom; tag codes; revisions; contractor link; PDF
 - Approvals (the submittals-lite feature)
-- Time tracking (timer and manual), hourly and flat fee billing
-- Invoices: fees, time, product, reimbursables; retainers applied; Stripe payments
+- Time tracking (timer and manual), billable by default with a non-billable option, hourly and flat fee billing
+- Studio setup questions that decide how the studio charges and how its invoices are generated (see 6.10)
+- Invoices: billable time, flat fees and reimbursables as the studio chooses, plus product changes such as freight adjustments, with any deposit applied; Stripe payments
 - QBO sync: customers, invoices, payments, vendors, bills
 - Branded PDFs for proposals, POs, invoices and schedules
 - Import from CSV (vendors, clients, items)
@@ -131,7 +136,7 @@ Priority: **M** = MVP, **L** = later.
 - Xero support
 - AI extraction from vendor tear sheets and PDFs into items
 - Shared vendor directory across studios
-- Lead pipeline and engagement letters
+- Lead pipeline
 - A sync engine for full local-first use, if users ask for it
 - Teams of 10–50: departments, approval chains, permissions per project
 
@@ -157,7 +162,7 @@ Studio ─┬─ User (role) ─ TimeEntry
                     ├─ Proposal ─ ProposalVersion ─ ProposalLine (snapshot of Item pricing)
                     ├─ PurchaseOrder ─ POLine (→ ItemComponent) ─ Shipment ─ ReceivingRecord
                     ├─ Schedule ─ ScheduleRevision (issued snapshot)
-                    ├─ Invoice ─ InvoiceLine (fee | time | product | reimbursable | retainer-applied)
+                    ├─ Invoice ─ InvoiceLine (time | fee | reimbursable | product-adjustment | deposit-applied)
                     ├─ Payment (client → studio, via Stripe or recorded manually)
                     ├─ VendorDeposit / VendorBill (studio → vendor, synced to QBO)
                     ├─ Expense (reimbursable)
@@ -172,10 +177,10 @@ Studio ─┬─ User (role) ─ TimeEntry
    - Each component: `net_cost × qty`, plus freight, crating, receiving and install charges
    - Client price by mode: **markup** `cost × (1 + m)`, **margin** `cost ÷ (1 − g)`, **MSRP minus discount**, or a **fixed** price
    - Tax applies to the charge types the project marks taxable (states differ on taxing freight and install). Exempt clients have $0 tax and a certificate on file.
-   - Deposit % comes from the studio default, can be changed per proposal, and can be changed per line
+   - Product proposals have no deposit; the client pays 100% of approved lines. Only the contract can have a deposit (6.9)
    - Rounding: compute in cents and round at the line level, using one documented rule everywhere
 5. **Status rules** live in code, not in free-form status fields:
-   - Item procurement: `draft → proposed → approved | rejected → deposit_paid → ordered → acknowledged → in_production → shipped → received → delivered → installed → closed`, with side branches `backordered`, `damaged`, `cancelled`
+   - Item procurement: `draft → proposed → approved | rejected → paid → ordered → acknowledged → in_production → shipped → received → delivered → installed → closed`, with side branches `backordered`, `damaged`, `cancelled`
    - An item's status is **calculated** from its components' PO lines: the item is only as far along as its slowest component
    - Proposal: `draft → sent → partially_approved → approved → superseded`
    - PO: `draft → sent → acknowledged → partially_received → received → closed | cancelled`
@@ -187,13 +192,29 @@ Studio ─┬─ User (role) ─ TimeEntry
 ## 6. Core workflows (end to end)
 
 6.1 **Sourcing:** clip, choose the project and room, the app guesses vendor, price and dimensions, the user confirms, the item is added as a draft.
-6.2 **Proposal to deposit:** select items, create a proposal version, send the share link, the client approves lines (email code), e-signs and pays the deposit. Items move to `deposit_paid`, a payment is recorded and synced to QBO, and a task "Order approved items" is created.
-6.3 **Order:** "Generate POs" groups the approved components by vendor. The studio reviews, then sends by email with a PDF and vendor link. The vendor acknowledges and enters a ship date. A vendor deposit is recorded and the bill syncs to QBO.
+6.2 **Product proposal to payment:** select items, create a proposal version, send the share link, the client approves lines (email code), e-signs and pays 100% of the approved lines. Items move to `paid`, a payment is recorded and synced to QBO, and a task "Order approved items" is created.
+6.3 **Order:** nothing is ordered until the client has paid. "Generate POs" groups the paid components by vendor. The studio reviews, then sends by email with a PDF and vendor link. The vendor acknowledges and enters a ship date. A vendor deposit is recorded and the bill syncs to QBO.
 6.4 **Tracking:** an automatic follow-up task appears if a PO is unacknowledged after N days or past its ship date. The procurement board shows everything by status.
 6.5 **Receiving:** the warehouse or studio records a receipt with photos. Damage leads to a claim and a task. Delivery and install close out the item.
 6.6 **Approvals (submittals-lite):** attach a CFA, shop drawing or slab photo to an item. Request approval from the client (link) or a designer (internally). Outcome is `approved`, `approved as noted` or `revise and resubmit`. The item can't be ordered until required approvals clear.
 6.7 **Schedules:** add specified items to the lighting or plumbing schedule. Tag codes such as L-1 are assigned automatically. "Issue revision" freezes a snapshot. The contractor link always shows the latest revision with changes marked, and a PDF is generated.
-6.8 **Billing:** time entries and fees, plus product balances and reimbursables, go on an invoice with any retainer applied. Send the link, the client pays, and it syncs to QBO.
+6.8 **Billing:** what goes on an invoice follows the studio's setup answers (6.10): billable time, flat fees and reimbursables where the studio uses them, and product changes, such as a freight adjustment when freight came in above or below the proposal. Any deposit is applied to billable time only. Send the link, the client pays, and it syncs to QBO.
+6.9 **Client onboarding:** added with the lead designer on Nov 3, 2026. The money rules are in `docs/money-policy.md` section 5. The decisions still needed are items 9 and 10 in section 15.
+
+1. **Add the client.** A designer, or anyone else allowed to add clients, creates the client and their project.
+2. **Fill in the contract.** Every studio uploads its own contract once and reuses it for each client. In this workflow "proposal" and "contract" are the same document. Proposed: the studio marks where the editable fields go on the page, including the signature. For each project, the designer edits those fields and Coord adds the values to a copy of the contract. Text outside the fields can't be edited in Coord, and changing it means uploading a new contract. A new upload never changes a contract already sent. The contract covers design time only. Materials and products go on a separate proposal that Coord generates from the project's items and is sent later (6.2), and some projects never have one.
+3. **Calculate the deposit.** The designer enters the hourly rate and projected hours, and Coord calculates `hourly rate × projected hours × deposit %`. Fields for the client's name, rate, hours and deposit are filled from Coord's own data, so the contract shows the same numbers Coord charges. The rate is the only rate charged on the project. The deposit percentage comes from a studio-wide setting that defaults to **50%**. A 60-hour project at $150/h has a **$4,500** deposit.
+4. **Send and sign.** The client receives a share link (D6), reads the contract on Coord and signs there with the built-in e-sign, with no account needed. Coord keeps the filled-in copy, its hash, and a record of the signature, and that copy can't be edited once sent.
+5. **Pay, if applicable.** Signing takes the client straight to paying the deposit through Stripe. Coord treats a deposit, down payment or retainer as the same thing. ACH shows as "processing" until it settles (section 11.6).
+6. **Show hours on the project.** The design team sees total, billable and non-billable hours. All time is billable unless someone marks it non-billable. Clients never see this view, and it is left out of every share page.
+7. **Show the hours the deposit covers.** Once the payment succeeds, the project also shows how many billable hours the deposit covers, which is `projected hours × deposit %`. The 60-hour project above reads "12 of 30 deposit hours used". Billable time uses up the deposit first, and non-billable time doesn't count.
+8. **Mark when billing starts.** Past that point the project shows a plain marker, such as "Past the deposit: 5 h billable". This view shows hours, not dollars. Actual billing goes through 6.8, with the deposit applied.
+9. **Refund what's left.** If the project closes before the deposit is used up, the client is refunded the balance through Stripe.
+
+**The deposit is optional.** Each studio chooses whether it charges one, and Coord doesn't assume it does. A studio that charges deposits can still skip one on a single contract. Steps 5, 7, 8 and 9 and the deposit calculation in step 3 apply only when there is a deposit. Without one, the designer still enters the hourly rate, signing finishes onboarding with no payment step, and the project just shows hours worked. All billable time is billed by invoice from the first hour.
+
+6.10 **Studio setup:** when a studio joins Coord, it answers a few questions about how it charges, and Coord generates invoices from the answers. The questions are how it charges for design work (hourly, flat fee or both), whether it charges a deposit and at what %, and whether it bills reimbursable expenses back to clients. A studio can change its answers later in settings. A change never alters an invoice or contract already sent.
+
 
 ### Submittals compared with designer approvals
 In commercial construction a *submittal* is the contractor formally submitting shop drawings, product data and samples to the architect or designer for approval, tracked in a numbered log. Residential designers don't keep that log, but they make the **same kind of approval decisions** constantly: fabric CFAs, upholstery and millwork shop drawings from workrooms, stone slab selection, paint drawdowns, tile samples, lighting cut sheets. The **Approvals** feature covers this, and it can block an order until approval is given, which prevents costly reorders. A formal log can be added later if commercial users need one.
@@ -210,6 +231,7 @@ In commercial construction a *submittal* is the contractor formally submitting s
 | Assistant | ✗ | ✗ | Configurable | ✗ | ✗ |
 | Bookkeeper | ✔ | ✗ | Invoices only | ✔ | ✗ |
 
+- Adding clients and starting onboarding (6.9) is its own permission, on by default for Owner, Admin / Manager and Designer. Sending the client a payment link doesn't give a Designer access to payments or QBO.
 - The server shapes each response by **field-level permission set** (for example `can_view_cost`). Cache keys include that permission set (see 9.3).
 - Share links have a fixed **audience scope** (`client`, `vendor` or `contractor`), and each scope has a hard-coded list of allowed fields. A vendor link shows cost and **never** client price. A client link shows client price and **never** cost.
 
@@ -244,7 +266,7 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 | Auth | Better Auth (organizations, invitations, passkeys) or WorkOS | Multi-tenant, with SSO possible later |
 | Email | Postmark for transactional and outbound documents; inbound parsing later | Reliable delivery for POs and invoices |
 | Payments | Stripe Connect (Express or Standard) + Stripe Elements / Checkout | See section 11 |
-| E-sign | Built-in click-to-sign (typed name, timestamp, IP, document hash) for the MVP; Dropbox Sign or DocuSign later if needed | ESIGN Act–compliant for proposals |
+| E-sign | Built-in click-to-sign (typed name, timestamp, IP, document hash) for the MVP, on Coord's own documents and on contracts studios upload; Dropbox Sign or DocuSign later if needed | ESIGN Act–compliant for proposals |
 | Clipper | Chrome extension (Manifest V3); Safari later | Reads schema.org/Open Graph data, with parsers per vendor site for the top vendors |
 | Hosting | API and workers on Fly.io or Render; static assets and the CDN on Cloudflare | Simple operations at this stage |
 | Observability | Sentry, OpenTelemetry, real-user monitoring (RUM) of Web Vitals | Enforces the performance budgets |
@@ -301,9 +323,9 @@ Processing payments means the following areas have to be handled:
 2. **Money transmission.** If we hold or move money *between* parties, we could become a money transmitter, which requires state licenses. With **Stripe Connect**, each studio is its own merchant of record and funds go to the studio's Stripe account. We never hold the funds. This is the main reason to use Connect.
 3. **KYC / onboarding.** Studios must verify their identity and business (EIN, bank account, owner identity). Stripe's hosted onboarding handles this. We show the account status and block payment features until the studio is verified.
 4. **Tax forms.** Stripe issues the 1099-K forms for connected accounts. We set up which party is responsible for them during the Connect setup.
-5. **Passing card fees to the client.** Many designers want to add about 3% for cards on large deposits. Card networks cap surcharges, require disclosure and notice, and do not allow surcharges on debit cards. **A few states restrict or ban surcharging, and the rules change.** Approach: a studio setting off by default, a disclosure on the payment page, and a check by state, plus "ACH is free" messaging, which is often easier anyway. Confirm current rules with counsel before launch.
-6. **ACH.** It requires authorization from the payer under the NACHA rules. Stripe's ACH flow records it. ACH has return windows of several days, so a deposit isn't confirmed immediately. The UI should say **"processing"** and not "paid" until it settles.
-7. **Disputes and refunds.** Large deposits on custom work are a chargeback risk. Store the signed proposal, approval records and terms, which non-refundable custom-order clauses depend on, as evidence for disputes.
+5. **Passing card fees to the client.** Many designers want to add about 3% for cards on large payments. Card networks cap surcharges, require disclosure and notice, and do not allow surcharges on debit cards. **A few states restrict or ban surcharging, and the rules change.** Approach: a studio setting off by default, a disclosure on the payment page, and a check by state, plus "ACH is free" messaging, which is often easier anyway. Confirm current rules with counsel before launch.
+6. **ACH.** It requires authorization from the payer under the NACHA rules. Stripe's ACH flow records it. ACH has return windows of several days, so a payment isn't confirmed immediately. The UI should say **"processing"** and not "paid" until it settles.
+7. **Disputes and refunds.** Large payments on custom work are a chargeback risk. Store the signed proposal, approval records and terms, which non-refundable custom-order clauses depend on, as evidence for disputes.
 8. **Platform terms.** Terms of service and a privacy policy, plus a data processing agreement (DPA) for studios that ask. SOC 2 can wait until firms of 10–50 start requesting it.
 
 ---
@@ -366,3 +388,5 @@ M2 comes before M3 because the proposal-to-deposit path is what studios pay for 
 6. **E-sign:** is the built-in click-to-sign enough, or do studios expect DocuSign? Ask beta studios. **M2 shipped the built-in click-to-sign** (typed name, verified email, time, IP, document hash); still ask beta studios.
 7. **Fee types:** confirm that flat fee plus hourly covers most beta studios before deferring cost-plus. Before M4.
 8. **Proposal PDF:** M2's client page doubles as the printable document (print or save as PDF from the browser). Server-rendered PDF files for attachments (section 8, Playwright worker) are still to build, likely alongside PO PDFs in M3.
+9. **Uploaded contract (6.9):** confirm that placed fields on a PDF cover what studios need, and vet a PDF library or approach under the dependency rule. Have counsel review the signing flow before launch. Before the onboarding brief.
+10. **Deposits on flat-fee work (6.9, 6.10):** the deposit formula and the "past the deposit" marker are based on hours. Proposed for a flat-fee contract: the deposit is `flat fee × deposit %` and is applied to the fee on invoices, the project shows hours worked with no marker, and no unused balance is refunded because the fee is fixed. Also decide whether a flat fee can be billed in stages, and whether a studio answering "both" picks per contract. Before G3.

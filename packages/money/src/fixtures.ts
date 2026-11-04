@@ -54,8 +54,21 @@ export const fixtures: readonly Fixture[] = [
   // Examples from the money policy
   { name: "§3 line with a whole quantity", a: 11788, b: 4000, divisor: 1000, expected: 47152 },
   { name: "§3 sales tax on the sofa", a: 1_080_000, b: 82_500, divisor: MILLION, expected: 89100 },
-  { name: "§3 deposit on the sofa", a: 1_169_100, b: 500_000, divisor: MILLION, expected: 584550 },
-  { name: "§5 Rule B deposit", a: 1_000_000, b: 500_000, divisor: MILLION, expected: 500000 },
+  {
+    name: "§3 deposit, 60 h at $150.00",
+    a: 900_000,
+    b: 500_000,
+    divisor: MILLION,
+    expected: 450000,
+  },
+  {
+    // $150.25 × 12.5 h × 50%. Rounding the 12.5 h amount first would give $939.07.
+    name: "§5 deposit rounded once, on the final amount",
+    a: 15025 * 12_500,
+    b: 500_000,
+    divisor: 1000 * MILLION,
+    expected: 93906,
+  },
   { name: "§7 7.5 h at $150.00", a: 15000, b: 27_000, divisor: 3600, expected: 112500 },
 
   // Edges

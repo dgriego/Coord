@@ -356,6 +356,7 @@
           ["A4", "Settings and branding", "Logo, colors, terms, default markup and deposit"],
           ["A5", "Activity log", "See who changed what, and when"],
           ["A6", "Devices and account deletion", "Sign out a lost phone; delete an account as Apple requires", "P"],
+          ["A7", "Studio setup questions", "How you charge, deposits and expenses decide how invoices work"],
         ]},
         { name: "B. Directory", paint: "#f283a6", slices: [
           ["B1", "Clients and contacts", "Including tax-exempt status with a certificate"],
@@ -375,10 +376,11 @@
           ["D3", "Approve or reject per line", "Clients decide item by item"],
           ["D4", "E-signature", "Stored document, consent text and proof", "$"],
           ["D5", "Proposal PDF", "Numbers tested against the source data", "$"],
+          ["D6", "Contract", "Upload your own, edit its fields for each project, client signs on Coord", "$"],
         ]},
         { name: "E. Payments", paint: "#0fa3a6", slices: [
           ["E1", "Stripe onboarding", "Each studio connects its own Stripe account"],
-          ["E2", "Deposit checkout", "Only one open payment per document, so no double charges", "$"],
+          ["E2", "Checkout", "Contract deposit or full product payment; one open payment per document, so no double charges", "$"],
           ["E3", "Payment records", "Stripe's reports recorded exactly once", "$"],
           ["E4", "Checks, refunds and disputes", "Everything that can happen after payment", "$"],
           ["E5", "Nightly reconciliation", "Compares with Stripe every night and flags differences", "$"],
@@ -393,12 +395,13 @@
         { name: "G. Time and billing", paint: "#e2cc1e", slices: [
           ["G1", "Timer", "Start on your phone, see it on the web; works offline", "P"],
           ["G2", "Time entries and week view", "Quick manual entry on web and phone", "P"],
-          ["G3", "Rates and fees", "Hourly and flat fees; 0.25-hour billing by default", "$"],
-          ["G4", "Reimbursables", "Expenses to bill back to clients", "$"],
-          ["G5", "Invoices", "Fees, time, product balances, retainers applied", "$"],
+          ["G3", "Rates and fees", "Hourly rates, plus flat fees for studios that use them; 0.25-hour billing by default", "$"],
+          ["G4", "Reimbursables", "Expenses to bill back, for studios that turn them on", "$"],
+          ["G5", "Invoices", "Built from your setup answers: time, fees, expenses, product changes, any deposit applied", "$"],
           ["G6", "Invoice link and payment", "Branded page and PDF, paid through Stripe", "$"],
           ["G7", "QuickBooks sync", "Re-syncing never creates duplicates", "$"],
           ["G8", "Lock-screen timer", "Running timer on the lock screen", "P"],
+          ["G9", "Project hours and deposit marker", "Hours worked, and a plain marker once billing passes the deposit"],
         ]},
         { name: "H. Schedules and approvals", paint: "#f6ae2d", slices: [
           ["H1", "Schedules and tag codes", "Lighting, plumbing, finishes; codes like L-1 assigned for you"],
