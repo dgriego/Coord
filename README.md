@@ -6,6 +6,8 @@ time and billing, on the web and on your phone.
 This branch is a **fresh rebuild**. The previous app (milestones M0–M2) is preserved at the
 `legacy-m2` tag. The product itself is described in [PLAN.md](PLAN.md).
 
+**Progress:** [the live roadmap](https://claude.ai/artifact/TyvFjurV19Xc4WKEuRqaQy) (private to the owner) · [full plan](docs/rebuild-plan.md)
+
 ## First five minutes
 
 ```bash

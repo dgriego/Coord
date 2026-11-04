@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coord Rebuild Roadmap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Coord's own look: paint chips on a warm neutral page. One column of phases, each a
+         paint-coloured chip with its slices listed underneath. */
+      :root {
+        color-scheme: light;
+        --bg: #f7f6f3;
+        --surface: #ffffff;
+        --ink: #1d1b19;
+        --muted: #6b6761;
+        --rule: #e6e3dc;
+        --done: #1f9d55;
+        --done-soft: #e2f6e9;
+        --now: #2f54eb;
+        --now-soft: #e8edff;
+        --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+        --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #141312;
+          --surface: #1e1c1a;
+          --ink: #f3f1ec;
+          --muted: #a7a29a;
+          --rule: #34312d;
+          --done: #5fd68f;
+          --done-soft: #183323;
+          --now: #7f9cff;
+          --now-soft: #232b4d;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #141312;
+        --surface: #1e1c1a;
+        --ink: #f3f1ec;
+        --muted: #a7a29a;
+        --rule: #34312d;
+        --done: #5fd68f;
+        --done-soft: #183323;
+        --now: #7f9cff;
+        --now-soft: #232b4d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 15px/1.5 var(--body);
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+        display: grid;
+        gap: 28px;
+      }
+      h1,
+      h2 {
+        font-family: var(--display);
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        margin: 0;
+        text-wrap: balance;
+      }
+      h1 {
+        font-size: clamp(30px, 6vw, 42px);
+        line-height: 1.1;
+      }
+      h2 {
+        font-size: 20px;
+      }
+      p {
+        margin: 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 13px;
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 16px;
+        padding: 20px;
+      }
+      .summary {
+        display: grid;
+        gap: 14px;
+      }
+      .bar {
+        height: 10px;
+        border-radius: 999px;
+        background: var(--rule);
+        overflow: hidden;
+      }
+      .bar span {
+        display: block;
+        height: 100%;
+        background: var(--done);
+        border-radius: 999px;
+      }
+      .now {
+        display: grid;
+        gap: 12px;
+        background: var(--now-soft);
+        border-color: var(--now);
+      }
+      .eyebrow {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--now);
+      }
+      .steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .steps li {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        color: var(--muted);
+      }
+      .steps li[data-state="active"] {
+        background: var(--now);
+        border-color: var(--now);
+        color: var(--surface);
+      }
+      .chips {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      .chip {
+        display: grid;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        border-top: 6px solid var(--paint);
+      }
+      .chip:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--now);
+        outline-offset: 2px;
+      }
+      .chip small {
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .phase {
+        display: grid;
+        gap: 10px;
+        scroll-margin-top: 16px;
+      }
+      .phase-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        background: var(--paint);
+        align-self: center;
+      }
+      .slices {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .slice {
+        display: grid;
+        grid-template-columns: 22px 38px 1fr auto;
+        gap: 8px;
+        align-items: start;
+        padding: 10px 14px;
+        border-top: 1px solid var(--rule);
+      }
+      .slice:first-child {
+        border-top: 0;
+      }
+      .slice[data-status="now"] {
+        background: var(--now-soft);
+      }
+      .dot {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        border-radius: 50%;
+        border: 2px solid var(--rule);
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .slice[data-status="done"] .dot {
+        background: var(--done);
+        border-color: var(--done);
+        color: var(--surface);
+      }
+      .slice[data-status="now"] .dot {
+        border-color: var(--now);
+        background: var(--surface);
+      }
+      .slice[data-status="now"] .dot::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--now);
+      }
+      .id {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+      .name {
+        font-weight: 600;
+      }
+      .tags {
+        display: flex;
+        gap: 4px;
+      }
+      .tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--rule);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .open {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding-left: 18px;
+      }
+      @media (max-width: 480px) {
+        .slice {
+          grid-template-columns: 22px 34px 1fr;
+        }
+        .tags {
+          grid-column: 3;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="summary">
+        <h1>Coord rebuild roadmap</h1>
+        <p class="muted" id="count"></p>
+        <div class="bar" aria-hidden="true"><span id="fill"></span></div>
+        <p class="muted small">Last updated <span id="updated"></span></p>
+      </header>
+
+      <section class="panel now" aria-labelledby="now-title">
+        <p class="eyebrow">Where we are</p>
+        <h2 id="now-title"></h2>
+        <p id="now-detail"></p>
+        <ul class="steps" id="steps"></ul>
+      </section>
+
+      <nav class="chips" id="chips" aria-label="Phases"></nav>
+
+      <div id="phases" style="display: grid; gap: 28px"></div>
+
+      <section class="panel" aria-labelledby="open-title" style="display: grid; gap: 10px">
+        <h2 id="open-title">Defaults you haven't confirmed yet</h2>
+        <p class="muted small">
+          The plan runs on these until you say otherwise. Each one matters before the slice shown.
+        </p>
+        <ul class="open">
+          <li><strong>Sign-in: Better Auth.</strong> Decide before A1.</li>
+          <li><strong>Hosting: Cloudflare with Neon Postgres.</strong> Decide before 0.4.</li>
+          <li>
+            <strong>Invoices: Coord owns them, Stripe Checkout collects.</strong> Decide before G5.
+          </li>
+          <li>
+            <strong>Order: Procurement before Time &amp; Billing.</strong> Decide before F1.
+          </li>
+        </ul>
+      </section>
+
+      <p class="muted small">
+        Full plan:
+        <a href="https://github.com/dgriego/Coord/blob/claude/app-rebuild-plan-9ed5f0/docs/rebuild-plan.md"
+          >docs/rebuild-plan.md</a
+        >. $ marks money-critical slices with the extra accuracy checks. Phone marks slices with
+        work in the native app.
+      </p>
+    </main>
+
+    <script>
+      // ---- Update these as we go. Everything on the page is drawn from them. ----
+      const UPDATED = "November 3, 2026";
+      const CURRENT = { slice: "0.3", step: "Write brief" };
+      const DONE = new Set(["0.1", "0.2"]);
+      // ---------------------------------------------------------------------------
+
+      const STEPS = ["Write brief", "You approve", "Build and test", "Demo for you", "Merged"];
+
+      const PHASES = [
+        { name: "Phase 0: Foundations", paint: "#f6ae2d", slices: [
+          ["0.1", "Fresh repo and tooling", "Old app archived; strict rules and CI in place"],
+          ["0.2", "Money kernel and money policy", "Exact math, one parser, your rules written down", "$"],
+          ["0.3", "API contract and server pattern", "Each endpoint declared once; checks, errors and refreshes follow from it"],
+          ["0.4", "Database foundation", "Studio isolation, audit log, background-work queue, real Postgres tests"],
+          ["0.5", "Live updates", "One person's change appears on everyone else's screen"],
+          ["0.6", "Design tokens and core building blocks", "Your paint-chip look as reusable pieces, web and phone"],
+          ["0.7", "Web app shell", "Navigation, instant reloads from cache, command palette"],
+          ["0.8", "Phone app shell", "Coord installed on a phone with tabs and the update gate", "P"],
+        ]},
+        { name: "A. Studio and people", paint: "#f2643d", slices: [
+          ["A1", "Sign-in", "Sign up, sign in, email code, password reset", "P"],
+          ["A2", "Studios and roles", "Switch studios; roles limit what people see"],
+          ["A3", "Invitations", "Invite your team by email"],
+          ["A4", "Settings and branding", "Logo, colors, terms, default markup and deposit"],
+          ["A5", "Activity log", "See who changed what, and when"],
+          ["A6", "Devices and account deletion", "Sign out a lost phone; delete an account as Apple requires", "P"],
+        ]},
+        { name: "B. Directory", paint: "#f283a6", slices: [
+          ["B1", "Clients and contacts", "Including tax-exempt status with a certificate"],
+          ["B2", "Vendors", "Categories, trade accounts, freight terms"],
+          ["B3", "Spreadsheet import", "Preview first, then commit, using the shared parsers", "$"],
+        ]},
+        { name: "C. Projects and catalog", paint: "#9b5de5", slices: [
+          ["C1", "Projects and rooms", "The paint-chip project home"],
+          ["C2", "Items and pricing", "Markup, margin, COM parts; every number shows its source", "$"],
+          ["C3", "Images", "Stored and resized for speed"],
+          ["C4", "Item grid", "Spreadsheet-style editing, fast with thousands of rows"],
+          ["C5", "Link clipper", "Paste a product link to get an item, with a hardened security check"],
+        ]},
+        { name: "D. Proposals", paint: "#2f54eb", slices: [
+          ["D1", "Versions and snapshots", "Editing an item never changes a document already sent", "$"],
+          ["D2", "Client link", "Clients open it on a phone, no account needed"],
+          ["D3", "Approve or reject per line", "Clients decide item by item"],
+          ["D4", "E-signature", "Stored document, consent text and proof", "$"],
+          ["D5", "Proposal PDF", "Numbers tested against the source data", "$"],
+        ]},
+        { name: "E. Payments", paint: "#0fa3a6", slices: [
+          ["E1", "Stripe onboarding", "Each studio connects its own Stripe account"],
+          ["E2", "Deposit checkout", "Only one open payment per document, so no double charges", "$"],
+          ["E3", "Payment records", "Stripe's reports recorded exactly once", "$"],
+          ["E4", "Checks, refunds and disputes", "Everything that can happen after payment", "$"],
+          ["E5", "Nightly reconciliation", "Compares with Stripe every night and flags differences", "$"],
+        ]},
+        { name: "F. Procurement", paint: "#2f9e57", slices: [
+          ["F1", "Purchase orders", "One per vendor, generated from approved items", "$"],
+          ["F2", "Vendor link", "Vendors confirm, add ship dates, tracking and invoices"],
+          ["F3", "Procurement board", "Everything on order, with automatic follow-ups"],
+          ["F4", "Receiving and damage", "Log deliveries with phone photos", "P"],
+          ["F5", "Vendor deposits and bills", "What you owe and have paid vendors", "$"],
+        ]},
+        { name: "G. Time and billing", paint: "#e2cc1e", slices: [
+          ["G1", "Timer", "Start on your phone, see it on the web; works offline", "P"],
+          ["G2", "Time entries and week view", "Quick manual entry on web and phone", "P"],
+          ["G3", "Rates and fees", "Hourly and flat fees; 0.25-hour billing by default", "$"],
+          ["G4", "Reimbursables", "Expenses to bill back to clients", "$"],
+          ["G5", "Invoices", "Fees, time, product balances, retainers applied", "$"],
+          ["G6", "Invoice link and payment", "Branded page and PDF, paid through Stripe", "$"],
+          ["G7", "QuickBooks sync", "Re-syncing never creates duplicates", "$"],
+          ["G8", "Lock-screen timer", "Running timer on the lock screen", "P"],
+        ]},
+        { name: "H. Schedules and approvals", paint: "#f6ae2d", slices: [
+          ["H1", "Schedules and tag codes", "Lighting, plumbing, finishes; codes like L-1 assigned for you"],
+          ["H2", "Issued revisions", "Frozen versions with changes marked"],
+          ["H3", "Schedules on the phone", "Readable on site, even with no signal", "P"],
+          ["H4", "Contractor link and PDF", "Always the latest revision"],
+          ["H5", "Approvals", "CFAs and shop drawings that block ordering until cleared"],
+        ]},
+        { name: "I. Project flow", paint: "#f2643d", slices: [
+          ["I1", "Phases and tasks", "Including tasks tied to items"],
+          ["I2", "Templates", "A new project ready in under a minute"],
+          ["I3", "My Day", "What needs you today, on web and phone", "P"],
+          ["I4", "Project health", "Late orders and open approvals at a glance"],
+        ]},
+        { name: "J. Hardening and launch", paint: "#9b5de5", slices: [
+          ["J1", "Migration imports", "From DesignSmart and Programa"],
+          ["J2", "Profit and receivables reports", "Tied out against source documents", "$"],
+          ["J3", "Accessibility pass", "Keyboard, screen readers, contrast"],
+          ["J4", "Load tests", "Performance budgets hold under real use"],
+          ["J5", "Security review", "A full pass before real client money"],
+          ["J6", "App Store and Play release", "Privacy labels, store review, launch", "P"],
+        ]},
+      ];
+
+      const element = (tag, props = {}, ...children) => {
+        const node = Object.assign(document.createElement(tag), props);
+        node.append(...children);
+        return node;
+      };
+
+      const allSlices = PHASES.flatMap((phase) => phase.slices);
+      const statusOf = (id) => (DONE.has(id) ? "done" : id === CURRENT.slice ? "now" : "later");
+      const current = allSlices.find(([id]) => id === CURRENT.slice);
+
+      document.getElementById("count").textContent =
+        `${DONE.size} of ${allSlices.length} slices done, one at a time.`;
+      document.getElementById("fill").style.width = `${(DONE.size / allSlices.length) * 100}%`;
+      document.getElementById("updated").textContent = UPDATED;
+      document.getElementById("now-title").textContent = `${current[0]}: ${current[1]}`;
+      document.getElementById("now-detail").textContent = current[2];
+      document.getElementById("steps").append(
+        ...STEPS.map((step) => {
+          const item = element("li", { textContent: step });
+          item.dataset.state = step === CURRENT.step ? "active" : "idle";
+          return item;
+        }),
+      );
+
+      PHASES.forEach((phase, index) => {
+        const finished = phase.slices.filter(([id]) => DONE.has(id)).length;
+        const anchor = `phase-${index}`;
+
+        const chip = element(
+          "a",
+          { className: "chip", href: `#${anchor}` },
+          phase.name,
+          element("small", { textContent: `${finished} of ${phase.slices.length} done` }),
+        );
+        chip.style.setProperty("--paint", phase.paint);
+        document.getElementById("chips").append(chip);
+
+        const rows = phase.slices.map(([id, name, detail, kind]) => {
+          const status = statusOf(id);
+          const tags = element("div", { className: "tags" });
+          if (kind === "$") tags.append(element("span", { className: "tag", textContent: "$ money" }));
+          if (kind === "P") tags.append(element("span", { className: "tag", textContent: "Phone" }));
+          const row = element(
+            "li",
+            { className: "slice" },
+            element("span", {
+              className: "dot",
+              textContent: status === "done" ? "✓" : "",
+              title: { done: "Done", now: "In progress", later: "Not started" }[status],
+            }),
+            element("span", { className: "id", textContent: id }),
+            element(
+              "div",
+              {},
+              element("div", { className: "name", textContent: name }),
+              element("div", { className: "muted small", textContent: detail }),
+            ),
+            tags,
+          );
+          row.dataset.status = status;
+          return row;
+        });
+
+        const section = element(
+          "section",
+          { className: "phase", id: anchor },
+          element(
+            "div",
+            { className: "phase-head" },
+            element("span", { className: "swatch" }),
+            element("h2", { textContent: phase.name }),
+            element("span", {
+              className: "muted small",
+              textContent: `${finished} of ${phase.slices.length} done`,
+            }),
+          ),
+          element("ul", { className: "slices" }, ...rows),
+        );
+        section.style.setProperty("--paint", phase.paint);
+        document.getElementById("phases").append(section);
+      });
+    </script>
+  </body>
+</html>
