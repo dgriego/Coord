@@ -58,9 +58,13 @@ export function split(total: Cents, weights: readonly number[]): Cents[] {
   const assigned = shares.reduce((sofar, share) => sofar + share.roundedDown, 0n);
   const leftover = Number(size - assigned);
   // Array.sort is stable and shares start in line order, so equal losses keep the earlier line first.
-  const biggestLossFirst = [...shares].sort(
-    (a, b) => Number(b.lost > a.lost) - Number(a.lost > b.lost),
-  );
+  const biggestLossFirst = [...shares].sort((a, b) => {
+    // The JavaScript spec requires a positive result here. V8 only ever checks for a negative one,
+    // so changing this line can't alter the outcome under Node, and no test could catch it.
+    // Stryker disable next-line ConditionalExpression,EqualityOperator
+    const bLostMore = Number(b.lost > a.lost);
+    return bLostMore - Number(a.lost > b.lost);
+  });
   const receivesExtraCent = new Set(biggestLossFirst.slice(0, leftover).map((share) => share.line));
 
   return shares.map(({ line, roundedDown }) => {

@@ -114,14 +114,14 @@ describe("split", () => {
           const exact = BigInt(total) * BigInt(weights.at(line) as number);
           return { line, lost: exact % totalWeight, gotExtra: BigInt(piece) > exact / totalWeight };
         });
+        type Line = (typeof lines)[number];
+        const outranks = (a: Line, b: Line): boolean =>
+          a.lost > b.lost || (a.lost === b.lost && a.line < b.line);
+        const strongestWithoutExtra = lines
+          .filter((line) => !line.gotExtra)
+          .reduce((best, line) => (outranks(line, best) ? line : best));
         const winners = lines.filter((line) => line.gotExtra);
-        const others = lines.filter((line) => !line.gotExtra);
-        for (const winner of winners) {
-          for (const other of others) {
-            const fairTie = winner.lost === other.lost && winner.line < other.line;
-            expect(winner.lost > other.lost || fairTie).toBe(true);
-          }
-        }
+        expect(winners.every((line) => outranks(line, strongestWithoutExtra))).toBe(true);
       }),
       { numRuns: 500 },
     );
