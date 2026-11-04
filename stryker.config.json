@@ -10,6 +10,6 @@
   "reporters": ["clear-text", "progress"],
   "coverageAnalysis": "perTest",
   "thresholds": { "high": 100, "low": 95, "break": 95 },
-  "ignorePatterns": ["docs", "coverage", ".github"],
+  "ignorePatterns": [".claude", ".vercel", "docs", "coverage", ".github"],
   "tempDirName": ".stryker-tmp"
 }
