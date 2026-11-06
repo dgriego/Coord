@@ -8,11 +8,43 @@ Coord is being rebuilt one slice at a time. Read these before starting work:
 - [docs/dependencies.md](docs/dependencies.md): only actively maintained, proven packages get in
 - [PLAN.md](PLAN.md): the product itself
 
+## Engineering priorities
+
+Money accuracy is a hard gate. After that, when these pull against each other, earlier wins.
+
+1. **Client data stays private.** Collect only what a feature needs. Logs, error responses,
+   bug reports, URLs and analytics never name anyone: no names, emails, phone numbers,
+   addresses, tokens or amounts. Use opaque ids that don't say who a person is. TLS everywhere,
+   secrets and sensitive files encrypted at rest, data removed when its account or studio is
+   deleted.
+2. **Never leak the studio's margins.** Cost and markup are stripped on the server for every
+   client, vendor or limited view, with a test that fails if a forbidden field gets through.
+3. **Deny by default.** Every endpoint declares a permission and audience; RLS backs it up. Least
+   privilege for database roles, API keys and CI tokens. Secrets live in the platform secret
+   store, never in code, the repo or logs.
+4. **Test what can hurt.** Money and access get the deepest tests. For access, test every role
+   against every endpoint, both allowed and denied, plus another studio's data and forbidden
+   fields. For tokens: session and share-link tokens are random, stored only as hashes, sent in
+   httpOnly cookies or SecureStore, expire, can be revoked, and are never logged. Everything else
+   gets enough tests to change it safely.
+5. **No wasted queries.** A fixed query count per endpoint (the query budget), an index for
+   every column a query filters, joins or sorts on, no query that reads a whole table to find a
+   few rows, and paginated lists.
+6. **Easy to review, for Daniel and for Claude.** One reviewable step at a time, such as a schema
+   change or one endpoint with its tests, not a whole slice in one diff and not trivially small
+   pieces. One pattern per concern, plain names, no cleverness.
+7. **KISS.** The simplest thing that meets the rule. No abstraction before a second real use, no
+   speculative options, layers or packages.
+
 ## How each slice runs
 
 1. Write a brief from `docs/features/_template.md`. The user approves it before any code.
 2. Build and test it. `npm run ci` must pass.
-3. Demo it to the user. Ask before committing or pushing.
+3. Review your own work before the demo: bugs and logic errors, privacy and margin leaks, and
+   query counts. Do a security pass on anything touching the database, auth or the network
+   (injection, missing permission or RLS checks, SSRF, open endpoints, exposed secrets). Fix what
+   you find, and list what you checked in the demo.
+4. Demo it to the user. Ask before committing or pushing.
 
 Work happens directly on `main`.
 

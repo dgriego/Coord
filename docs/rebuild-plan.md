@@ -65,6 +65,10 @@ New requirements for the rebuild:
    - `money` and `domain` import nothing from apps;
    - `ui-*` never imports `api`;
    - pages never call `fetch`.
+6. **Privacy and security.**
+   - One logger that takes an allow-list of fields, like the serializers. Client details never reach it; a test fails if they do.
+   - Error responses carry a code and a safe message only. Details stay in server logs, without client data.
+   - Every endpoint has a permission and audience; API tests cover another studio, a missing role and an expired session.
 
 ## Vetted dependencies
 
@@ -291,7 +295,8 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
    - Playwright on desktop and at mobile web width;
    - Maestro on iOS and Android when the slice touches the native app.
 8. Performance budgets: 200 KB JS and 30 KB CSS gzipped on the initial route; API p95 under 200 ms; navigation from cache under 100 ms.
-9. **A demo for you.** Then merge, update the pattern registry, and move to the next slice.
+9. **Self-review.** Claude reviews the slice's diff for bugs, logic errors, privacy and security issues, and query counts, and fixes what it finds.
+10. **A demo for you.** Then merge, update the pattern registry, and move to the next slice.
 
 ## Phases and slices (in order; 💰 = money gate, 📱 = native work)
 
@@ -381,7 +386,7 @@ J1 DesignSmart and Programa import.
 J2 💰 Profit and AR reports.
 J3 Accessibility pass.
 J4 Load tests.
-J5 Security review.
+J5 Full security review (each slice already gets its own in step 9).
 J6 📱 App Store and Play readiness: privacy labels, no in-app subscription purchase.
 
 ## Verification

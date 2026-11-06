@@ -35,6 +35,10 @@ Contract names, permission and audience for each.
 
 The rounding, allocation or invariants this slice depends on, with links to `docs/money-policy.md`.
 
+## Privacy and security
+
+Which client data this slice touches, who can see it, and what is logged (ids only).
+
 ## Mobile impact
 
 What the native app gets, if anything.
