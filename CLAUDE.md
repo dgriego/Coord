@@ -34,7 +34,10 @@ Money accuracy is a hard gate. After that, when these pull against each other, e
    change or one endpoint with its tests, not a whole slice in one diff and not trivially small
    pieces. One pattern per concern, plain names, no cleverness.
 7. **KISS.** The simplest thing that meets the rule. No abstraction before a second real use, no
-   speculative options, layers or packages.
+   speculative options, layers or packages. This is about the technology, not the product: keep
+   the stack small for 1 to 10 person studios (a cache, an extra service or a summary table comes
+   only after a measurement shows the need), and spend the effort on features built around how
+   interior designers actually work.
 
 ## How each slice runs
 

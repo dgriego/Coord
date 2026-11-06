@@ -246,6 +246,8 @@ In commercial construction a *submittal* is the contractor formally submitting s
 
 ## 8. Architecture and stack
 
+Where this section and `docs/rebuild-plan.md` differ, the rebuild plan wins.
+
 ### Decision: TypeScript backend, not Rust (Oct 27, 2026)
 Asked: would a Rust backend maximize speed? For this product it wouldn't make a difference users can feel.
 - **Where time goes:** after the first visit, screens render from the browser cache in under 100 ms and edits show instantly, so the server is rarely on the critical path. When it is, a request spends about 1 ms in our code and 20–80 ms on the network and in Postgres. Rust could cut that 1 ms to 0.2 ms, which nobody can see.
@@ -257,16 +259,16 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 - The web app is static files on Vercel's CDN. The API is one Vercel Function, a Node handler built with the Build Output API (`npm run build:vercel`).
 - **Database:** hosted Postgres (Neon or Supabase) through `DATABASE_URL`. Migrations run during the build, not on cold start, so two instances never race.
 - **Live updates across instances:** Postgres `LISTEN/NOTIFY` replaces the in-memory event bus whenever `DATABASE_URL` is set.
-- **Server cache:** off on Vercel, because instances don't share memory. The browser cache does most of the work. Redis (Upstash) can bring it back later.
+- **Server cache:** off on Vercel, because instances don't share memory. The browser cache does most of the work. A server cache is added only when a measured endpoint needs one.
 
 | Layer | Choice | Why |
 |---|---|---|
 | Language | TypeScript across the whole stack, npm workspaces monorepo | Types shared between client, server and PDF templates |
 | Web app | React + Vite SPA, TanStack Router, TanStack Query, TanStack Table with virtualization | App-like speed, loaders that prefetch per route, a fast grid |
-| Share pages | Server-rendered by the API (lightweight HTML, very little JS), cached at the edge | Clients open links on phones and need the first view to be instant |
+| Share pages | Server-rendered by the API (lightweight HTML, very little JS), never cached at the edge | Clients open links on phones and need the first view to be instant |
 | API | Hono on Node, zod-validated typed routes (or tRPC) | Fast, simple, runs on the edge or on Node |
 | Database | Postgres (Neon or Supabase) + Drizzle ORM; `pg_trgm` and full-text search for search | One datastore, RLS, adequate search for the MVP |
-| Cache / queue | Redis (Upstash or managed) for hot aggregates and rate limits; **pg-boss** for jobs | Fewer moving parts |
+| Jobs | A Postgres outbox delivered by a queue (Cloudflare Queues in the rebuild plan) | No extra datastore |
 | Files / images | Cloudflare R2 + Cloudflare Images (or imgproxy) | Cheap storage and on-the-fly AVIF and WebP |
 | PDFs | Same React components rendered to HTML, then Playwright/Chromium in a worker | One template system for screen and PDF |
 | Contract PDFs | Show the studio's PDF in the browser to place fields; write the values onto a copy of it on the server | The studio's layout stays intact. Libraries are vetted in the first contract brief (section 15, item 9). |
@@ -277,7 +279,7 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 | E-sign | Built-in click-to-sign (typed name, timestamp, IP, document hash) for the MVP, on Coord's own documents and on contracts studios upload; Dropbox Sign or DocuSign later if needed | ESIGN Act–compliant for contracts and procurement proposals |
 | Clipper | Chrome extension (Manifest V3); Safari later | Reads schema.org/Open Graph data, with parsers per vendor site for the top vendors |
 | Hosting | API and workers on Fly.io or Render; static assets and the CDN on Cloudflare | Simple operations at this stage |
-| Observability | Sentry, OpenTelemetry, real-user monitoring (RUM) of Web Vitals | Enforces the performance budgets |
+| Observability | Sentry, with client data scrubbed. OpenTelemetry and real-user monitoring wait until beta traffic needs them | Enough to find errors without another system |
 
 **Leaving room for local-first:** all reads go through TanStack Query keyed by normalized entity IDs, and all writes go through a single mutation layer. Moving to a sync engine (Zero, Replicache or ElectricSQL) later replaces that layer, not the screens.
 
@@ -285,7 +287,7 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 
 ## 9. Performance and caching
 
-### 9.1 Budgets (enforced in CI and RUM)
+### 9.1 Budgets (enforced in CI)
 - First load of the app shell: under 1.5 s to interactive on a typical laptop; JS under 200 KB gzipped for the initial route
 - Navigation between routes once cached: under 100 ms
 - Edits (optimistic): shown in under 50 ms
@@ -297,15 +299,14 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 |---|---|---|
 | Browser: query cache | All entities fetched, persisted to IndexedDB | Show cached data then refresh in the background; SSE pushes invalidations by ID. Cleared on logout or role change. |
 | Browser: prefetch | Route loaders, plus hover or focus on project links | Same as above |
-| Browser: service worker | App shell and hashed static assets | Cached permanently by file hash |
-| CDN | Static assets, transformed images, share pages | Images by hash; share pages purged when the document version changes |
-| Server: Redis | Project summaries, dashboard counts, report results | Keys include `studio:{id}:v{version}` so any write bumps the version |
-| Database | Summary tables (project totals, PO status counts) updated in the same transaction as the write | Always consistent |
+| CDN | Static assets and transformed images | Cached permanently by file hash |
 | Generated files | PDFs keyed by a hash of document version, branding and audience | Regenerated only when the hash changes |
+
+Not built until a measurement shows the need: a server cache (Redis), summary tables, a service worker. Totals and counts are computed with indexed queries.
 
 ### 9.3 Cache safety rules
 - Cache keys **must** include `studio_id` and the **permission set** (or audience scope for links). Responses with cost data are never shared between permission sets.
-- Share-page HTML at the CDN is keyed by link token and version. A revoked link purges it, and `Cache-Control: private` is set wherever cost-sensitive data could appear.
+- Share pages are never cached at the CDN. They are sent with `Cache-Control: private, no-store`, so a revoked link stops working at once and no client data sits in a shared cache.
 - Automated tests check that every serializer used for a client or vendor view drops the forbidden fields.
 
 ---
@@ -367,7 +368,7 @@ Each milestone ends with something beta studios can use, and has to meet its exi
 | M4 | **Time and billing** | Timer and manual time, rates, flat and hourly fees, reimbursables, invoices, retainers, QBO connection and sync | Invoices, payments and bills appear correctly in a QBO sandbox. Re-syncing creates no duplicates. |
 | M5 | **Schedules and approvals** | Schedule types, suggested and editable tag codes, issued revisions with changes marked, contractor link, PDF; the Approvals feature blocking orders | The contractor link shows the latest revision with marked changes on a phone. |
 | M6 | **Project flow** | Phases (Consultation, Schematic, Design Development, Construction Administration), tasks linked to items, templates, "My day" dashboard, project health view | A new project from a template is ready in under 1 minute. Item events create and close tasks. |
-| M7 | **Beta hardening** | DesignSmart and Programa import mappings, profit-per-project report, accessibility pass, load tests, security review, studio setup checklist | 5 beta studios run real projects for 4 weeks. Performance budgets hold in RUM. |
+| M7 | **Beta hardening** | DesignSmart and Programa import mappings, profit-per-project report, accessibility pass, load tests, security review, studio setup checklist | 5 beta studios run real projects for 4 weeks. Performance budgets hold for the beta studios. |
 
 M2 comes before M3 because the contract and its deposit are the first things a new client sees, and a project can have them without ever having a procurement proposal. Building payments in M2 also gives procurement proposals a checkout to reuse in M3.
 
