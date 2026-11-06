@@ -1,7 +1,7 @@
 # Coord
 
-Coord is design management for interior design studios: projects, items, proposals, purchasing,
-time and billing, on the web and on your phone.
+Coord is design management for interior design studios: client onboarding, projects, items,
+procurement, time and billing, on the web and on your phone.
 
 This is a **fresh rebuild**. The previous app (milestones M0–M2) is preserved at the
 `legacy-m2` tag. The product itself is described in [PLAN.md](PLAN.md).

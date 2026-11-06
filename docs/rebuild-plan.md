@@ -34,7 +34,7 @@ New requirements for the rebuild:
 | ⚙️  | **Auth: Better Auth**                                                                         | Works for web cookies and the native app (`@better-auth/expo`, secure storage). Includes email code, password reset, passkeys, organizations, roles and invitations, and revoking a session per device. It is the actively maintained successor (the Auth.js team joined it; Lucia is deprecated). Fallback: our own sessions, since the M0 code was sound. |
 | ⚙️  | **Hosting: Cloudflare**                                                                       | Workers for the API and web assets, Durable Objects for live updates and rate limits, Queues and Cron for jobs, R2 for files, Browser Rendering for PDFs. Postgres on Neon through Hyperdrive. Uses the `cf` CLI per your global rule.                                                                                                                      |
 | ⚙️  | **Invoices:** Coord owns the invoice documents and the math; Stripe Checkout collects payment | Branded client portal like proposals; retainers and time lines; QuickBooks sync                                                                                                                                                                                                                                                                             |
-| ⚙️  | **Order:** Proposals, then Payments, then Procurement, then Time & Billing                    | As PLAN.md                                                                                                                                                                                                                                                                                                                                                  |
+| ⚙️  | **Order:** Client Onboarding, then Payments, then Procurement, then Time & Billing            | As PLAN.md                                                                                                                                                                                                                                                                                                                                                  |
 
 ## Ground rules (enforced, not aspirational)
 
@@ -198,10 +198,11 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 
 **9. Documents.**
 
-- Each document type has one server-side **document view model**: proposal, invoice, PO, schedule.
+- Each document type has one server-side **document view model**: procurement proposal, invoice, PO, schedule.
 - The share page and the PDF render the **same** HTML template from that model, with a CSP header.
 - The PDF comes from Browser Rendering and is cached in R2 by content hash.
 - Tests extract the PDF text and assert that every number equals the model.
+- **Contracts are the one exception.** The studio's uploaded PDF is the template, so values are written onto a copy of it rather than rendered from HTML. This is a new pattern, so slice D1 needs a decision record and your approval. Tests still extract the PDF text and compare every value.
 
 **10. Jobs.**
 
@@ -228,7 +229,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 - **One `parseMoney`/`parseRate`/`parseQty`** for the web, the native app, the clipper and CSV import. Each has a table of accepted and rejected inputs ("1e3", "0x10", "1.250,00", 3 decimals, and so on). One `formatMoney` with a cached `Intl.NumberFormat`.
 - **`docs/money-policy.md`** (you approve it) records where rounding happens for each document. It also covers:
   - how the optional contract deposit is calculated, applied and refunded;
-  - paying product proposals in full;
+  - paying procurement proposals in full;
   - time billing increments, set per studio (1, 6 or 15 minutes), applied per entry;
   - how invoice time lines are summed per entry;
   - negative and credit lines;
@@ -325,27 +326,31 @@ C3 Images on R2.
 C4 Virtualized item grid.
 C5 URL clipper with the hardened SSRF guard.
 
-**D. Proposals**
-D1 💰 Versions and snapshots.
-D2 Client share portal and email code.
-D3 Approve or reject per line.
-D4 💰 E-sign: hash of the full document, a stored copy, the consent text.
-D5 💰 Proposal PDF.
-D6 💰 Contract: upload it, mark its fields, fill them in for each project and sign (PLAN.md 6.9).
+**D. Client Onboarding** (PLAN.md 6.9)
+D1 Contract upload: the studio's PDF stored on R2, with versions. Includes the decision record for writing onto PDFs.
+D2 Choose fields: place, name and type fields on the pages, including the signature.
+D3 💰 Fill in for a new client: values from Coord's data, deposit calculation, preview, frozen contract PDF, every value tested against the file.
+D4 Client share portal and email code, reused by every client document.
+D5 💰 E-sign: hash of the full document, a stored copy, the consent text, reused by procurement proposals.
 
 **E. Payments**
-E1 Connect onboarding.
-E2 💰 Checkout for a contract deposit or full payment on a product proposal: one open session, outbox.
+E1 Stripe Connect account setup.
+E2 💰 Contract deposit checkout, straight after signing: one open session, outbox. F5 reuses it.
 E3 💰 Webhook ingestion and ledger.
 E4 💰 Manual payments, refunds, disputes, ACH returns.
 E5 💰 Nightly reconciliation and the needs-review queue.
 
 **F. Procurement**
-F1 💰 POs per vendor from components.
-F2 Vendor link: acknowledge, ship date, tracking, invoice upload.
-F3 Procurement board and follow-ups.
-F4 📱 Receiving and damage, with phone photos.
-F5 💰 Vendor deposits and bills.
+F1 💰 Procurement proposals: generated from items with pricing and freight; versions and snapshots.
+F2 Proposal client link, using the D4 portal.
+F3 Approve or reject per line, and sign using D5.
+F4 💰 Proposal PDF.
+F5 💰 Payment in full on approved lines, using the E2 checkout. Nothing is ordered until the client has paid.
+F6 💰 POs per vendor from components.
+F7 Vendor link: acknowledge, ship date, tracking, invoice upload.
+F8 Procurement board and follow-ups.
+F9 📱 Receiving and damage, with phone photos.
+F10 💰 Vendor deposits and bills.
 
 **G. Time & Billing**
 G1 📱 Timer: start time held on the server, one running timer per user, live across devices, offline queue with idempotency.

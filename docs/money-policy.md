@@ -7,6 +7,8 @@ This file is the contract between how studios think about money and what the cod
 amount Coord shows, emails, prints, sends to Stripe or syncs to QuickBooks follows these rules, so
 the screen, the PDF, the payment and the books always agree to the cent.
 
+In this file, "proposal" means a **procurement proposal** (PLAN.md D10).
+
 ## 1. Units
 
 | Kind                  | Stored as                       | Example                            |
@@ -57,10 +59,10 @@ Example: $10.00 of tax across three equal lines → $3.34, $3.33, $3.33.
 
 > **Decided, D-1 (changed 2026-11-03): Only the contract can have a deposit, and each studio
 > chooses whether to charge one.** It covers design
-> time. Product proposals have no deposit, and the client pays 100%. This replaces the earlier rule
+> time. Procurement proposals have no deposit, and the client pays 100%. This replaces the earlier rule
 > that set a deposit percentage on each product line.
 
-### Product proposals
+### Procurement proposals
 
 - The client pays **100% of the approved lines**, including their freight, other charges and tax.
   Sofa $10,000 + freight $800 + tax $891 = client pays **$11,691.00**.
@@ -70,7 +72,7 @@ Example: $10.00 of tax across three equal lines → $3.34, $3.33, $3.33.
 ### The deposit on the contract
 
 A deposit, down payment and retainer are all treated as this one thing. A project can have this
-deposit and never have a product proposal. These rules cover hourly contracts. Rules for flat-fee
+deposit and never have a procurement proposal. These rules cover hourly contracts. Rules for flat-fee
 contracts must be added here before they are built.
 
 - **Amount:** hourly rate × projected total hours × deposit %, rounded **once**, on the final amount.

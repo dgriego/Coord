@@ -331,7 +331,7 @@
 
     <script>
       // ---- Update these as we go. Everything on the page is drawn from them. ----
-      const UPDATED = "November 3, 2026";
+      const UPDATED = "November 5, 2026";
       const CURRENT = { slice: "0.3", step: "Write brief" };
       const DONE = new Set(["0.1", "0.2"]);
       // ---------------------------------------------------------------------------
@@ -370,27 +370,31 @@
           ["C4", "Item grid", "Spreadsheet-style editing, fast with thousands of rows"],
           ["C5", "Link clipper", "Paste a product link to get an item, with a hardened security check"],
         ]},
-        { name: "D. Proposals", paint: "#2f54eb", slices: [
-          ["D1", "Versions and snapshots", "Editing an item never changes a document already sent", "$"],
-          ["D2", "Client link", "Clients open it on a phone, no account needed"],
-          ["D3", "Approve or reject per line", "Clients decide item by item"],
-          ["D4", "E-signature", "Stored document, consent text and proof", "$"],
-          ["D5", "Proposal PDF", "Numbers tested against the source data", "$"],
-          ["D6", "Contract", "Upload your own, edit its fields for each project, client signs on Coord", "$"],
+        { name: "D. Client onboarding", paint: "#2f54eb", slices: [
+          ["D1", "Contract upload", "Upload your own PDF once and reuse it for every client"],
+          ["D2", "Choose fields", "Mark the fields that change on each page, including the signature"],
+          ["D3", "Fill in for a new client", "Edit the values, calculate any deposit, preview; sent copies stay frozen", "$"],
+          ["D4", "Client link", "Clients open it on a phone, no account needed"],
+          ["D5", "E-signature", "Stored document, consent text and proof", "$"],
         ]},
         { name: "E. Payments", paint: "#0fa3a6", slices: [
-          ["E1", "Stripe onboarding", "Each studio connects its own Stripe account"],
-          ["E2", "Checkout", "Contract deposit or full product payment; one open payment per document, so no double charges", "$"],
+          ["E1", "Stripe account setup", "Each studio connects its own Stripe account"],
+          ["E2", "Deposit checkout", "Contract deposit right after signing; one open payment per document, so no double charges", "$"],
           ["E3", "Payment records", "Stripe's reports recorded exactly once", "$"],
           ["E4", "Checks, refunds and disputes", "Everything that can happen after payment", "$"],
           ["E5", "Nightly reconciliation", "Compares with Stripe every night and flags differences", "$"],
         ]},
         { name: "F. Procurement", paint: "#2f9e57", slices: [
-          ["F1", "Purchase orders", "One per vendor, generated from approved items", "$"],
-          ["F2", "Vendor link", "Vendors confirm, add ship dates, tracking and invoices"],
-          ["F3", "Procurement board", "Everything on order, with automatic follow-ups"],
-          ["F4", "Receiving and damage", "Log deliveries with phone photos", "P"],
-          ["F5", "Vendor deposits and bills", "What you owe and have paid vendors", "$"],
+          ["F1", "Procurement proposals", "Generated from items for furniture and materials, with pricing and freight; sent versions stay frozen", "$"],
+          ["F2", "Proposal client link", "The same client link contracts use"],
+          ["F3", "Approve or reject per line", "Clients decide item by item, then sign"],
+          ["F4", "Proposal PDF", "Numbers tested against the source data", "$"],
+          ["F5", "Payment in full", "Clients pay for approved items; nothing is ordered until then", "$"],
+          ["F6", "Purchase orders", "One per vendor, generated from paid items", "$"],
+          ["F7", "Vendor link", "Vendors confirm, add ship dates, tracking and invoices"],
+          ["F8", "Procurement board", "Everything on order, with automatic follow-ups"],
+          ["F9", "Receiving and damage", "Log deliveries with phone photos", "P"],
+          ["F10", "Vendor deposits and bills", "What you owe and have paid vendors", "$"],
         ]},
         { name: "G. Time and billing", paint: "#e2cc1e", slices: [
           ["G1", "Timer", "Start on your phone, see it on the web; works offline", "P"],
