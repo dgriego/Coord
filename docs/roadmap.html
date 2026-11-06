@@ -310,7 +310,6 @@
         </p>
         <ul class="open">
           <li><strong>Sign-in: Better Auth.</strong> Decide before A1.</li>
-          <li><strong>Hosting: Cloudflare with Neon Postgres.</strong> Decide before 0.4.</li>
           <li>
             <strong>Invoices: Coord owns them, Stripe Checkout collects.</strong> Decide before G5.
           </li>
@@ -324,8 +323,8 @@
         Full plan:
         <a href="https://github.com/dgriego/Coord/blob/main/docs/rebuild-plan.md"
           >docs/rebuild-plan.md</a
-        >. $ marks money-critical slices with the extra accuracy checks. Phone marks slices with
-        work in the native app.
+        >. $ marks money-critical slices with the extra accuracy checks. Phone marks field work,
+        built for phone browsers in the beta.
       </p>
     </main>
 
@@ -344,10 +343,9 @@
           ["0.2", "Money kernel and money policy", "Exact math, one parser, your rules written down", "$"],
           ["0.3", "API contract and server pattern", "Each endpoint declared once; checks, errors and refreshes follow from it"],
           ["0.4", "Database foundation", "Studio isolation, audit log, background-work queue, real Postgres tests"],
-          ["0.5", "Live updates", "One person's change appears on everyone else's screen"],
-          ["0.6", "Design tokens and core building blocks", "Your paint-chip look as reusable pieces, web and phone"],
-          ["0.7", "Web app shell", "Navigation, instant reloads from cache, command palette"],
-          ["0.8", "Phone app shell", "Coord installed on a phone with tabs and the update gate", "P"],
+          ["0.5", "Design tokens and core building blocks", "Your paint-chip look as reusable pieces"],
+          ["0.6", "Web app shell", "Navigation, instant reloads from cache, command palette"],
+          ["0.7", "Coord on your phone", "Add Coord to your home screen; field screens laid out for phones", "P"],
         ]},
         { name: "A. Studio and people", paint: "#f2643d", slices: [
           ["A1", "Sign-in", "Sign up, sign in, email code, password reset", "P"],
@@ -355,7 +353,7 @@
           ["A3", "Invitations", "Invite your team by email"],
           ["A4", "Settings and branding", "Logo, colors, terms, default markup and deposit"],
           ["A5", "Activity log", "See who changed what, and when"],
-          ["A6", "Devices and account deletion", "Sign out a lost phone; delete an account as Apple requires", "P"],
+          ["A6", "Devices and account deletion", "Sign out a lost device; delete an account", "P"],
           ["A7", "Studio setup questions", "How you charge, deposits and expenses decide how invoices work"],
         ]},
         { name: "B. Directory", paint: "#f283a6", slices: [
@@ -397,20 +395,19 @@
           ["F10", "Vendor deposits and bills", "What you owe and have paid vendors", "$"],
         ]},
         { name: "G. Time and billing", paint: "#e2cc1e", slices: [
-          ["G1", "Timer", "Start on your phone, see it on the web; works offline", "P"],
+          ["G1", "Timer", "Start on your phone, see it on the web", "P"],
           ["G2", "Time entries and week view", "Quick manual entry on web and phone", "P"],
           ["G3", "Rates and fees", "Hourly rates, plus flat fees for studios that use them; 0.25-hour billing by default", "$"],
           ["G4", "Reimbursables", "Expenses to bill back, for studios that turn them on", "$"],
           ["G5", "Invoices", "Built from your setup answers: time, fees, expenses, product changes, any deposit applied", "$"],
           ["G6", "Invoice link and payment", "Branded page and PDF, paid through Stripe", "$"],
           ["G7", "QuickBooks sync", "Re-syncing never creates duplicates", "$"],
-          ["G8", "Lock-screen timer", "Running timer on the lock screen", "P"],
-          ["G9", "Project hours and deposit marker", "Hours worked, and a plain marker once billing passes the deposit"],
+          ["G8", "Project hours and deposit marker", "Hours worked, and a plain marker once billing passes the deposit"],
         ]},
         { name: "H. Schedules and approvals", paint: "#f6ae2d", slices: [
           ["H1", "Schedules and tag codes", "Lighting, plumbing, finishes; codes like L-1 suggested for you and editable to match your floor plan"],
           ["H2", "Issued revisions", "Frozen versions with changes marked"],
-          ["H3", "Schedules on the phone", "Readable on site, even with no signal", "P"],
+          ["H3", "Schedules on the phone", "Readable on site in your phone's browser", "P"],
           ["H4", "Contractor link and PDF", "Always the latest revision"],
           ["H5", "Approvals", "Shop drawings and samples that block ordering until cleared"],
         ]},
@@ -426,7 +423,7 @@
           ["J3", "Accessibility pass", "Keyboard, screen readers, contrast"],
           ["J4", "Load tests", "Performance budgets hold under real use"],
           ["J5", "Security review", "A full pass before real client money"],
-          ["J6", "App Store and Play release", "Privacy labels, store review, launch", "P"],
+          ["J6", "Beta launch", "The first studios onboarded, with a feedback loop"],
         ]},
       ];
 

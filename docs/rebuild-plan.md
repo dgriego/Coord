@@ -19,7 +19,7 @@ New requirements for the rebuild:
 - O(n) or better on hot paths.
 - Stripe handles all payments.
 - Money accuracy tested above everything else.
-- A **native App Store app from day one**, for time tracking and viewing schedules on site.
+- Field work (the timer, My Day, schedules) runs **in the phone's browser for the beta**. A native App Store app comes after the beta, when studios need offline use or push notifications.
 - Only mature, actively maintained dependencies.
 - Every feature built and reviewed one piece at a time.
 
@@ -27,14 +27,14 @@ New requirements for the rebuild:
 
 ✅ = decided by you. ⚙️ = my default; change it at review if you want.
 
-|     | Decision                                                                                      | Why                                                                                                                                                                                                                                                                                                                                                         |
-| --- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ✅  | Native iOS/Android app at launch (Expo) next to the full web app                              | Field use: timer and schedules on site                                                                                                                                                                                                                                                                                                                      |
-| ✅  | Stripe processes all money (Connect, direct charges on each studio's account)                 | Coord never holds funds or card data                                                                                                                                                                                                                                                                                                                        |
-| ⚙️  | **Auth: Better Auth**                                                                         | Works for web cookies and the native app (`@better-auth/expo`, secure storage). Includes email code, password reset, passkeys, organizations, roles and invitations, and revoking a session per device. It is the actively maintained successor (the Auth.js team joined it; Lucia is deprecated). Fallback: our own sessions, since the M0 code was sound. |
-| ⚙️  | **Hosting: Cloudflare**                                                                       | Workers for the API and web assets, Durable Objects for live updates and rate limits, Queues and Cron for jobs, R2 for files, Browser Rendering for PDFs. Postgres on Neon through Hyperdrive. Uses the `cf` CLI per your global rule.                                                                                                                      |
-| ⚙️  | **Invoices:** Coord owns the invoice documents and the math; Stripe Checkout collects payment | Branded client portal like proposals; retainers and time lines; QuickBooks sync                                                                                                                                                                                                                                                                             |
-| ⚙️  | **Order:** Client Onboarding, then Payments, then Procurement, then Time & Billing            | As PLAN.md                                                                                                                                                                                                                                                                                                                                                  |
+|     | Decision                                                                                        | Why                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅  | Web app only for the beta; field screens built for phone browsers. Native app (Expo) after beta | Keeps the beta simple: one UI library, one sign-in path, no store review. Shared packages keep native cheap to add                                                                                                                                                                                                                                                                                  |
+| ✅  | Stripe processes all money (Connect, direct charges on each studio's account)                   | Coord never holds funds or card data                                                                                                                                                                                                                                                                                                                                                                |
+| ⚙️  | **Auth: Better Auth**                                                                           | Works for web cookies now and the later native app (`@better-auth/expo`, secure storage). Includes email code, password reset, passkeys, organizations, roles and invitations, and revoking a session per device. It is the actively maintained successor (the Auth.js team joined it; Lucia is deprecated). Fallback: our own sessions, since the M0 code was sound.                               |
+| ✅  | **Hosting: Vercel**                                                                             | Hono on Node as Vercel Functions, with the web app on Vercel's CDN and a preview link for every branch. Postgres on Neon. Jobs from a Postgres outbox, delivered right after commit and swept by Vercel Cron. Files on Cloudflare R2. PDFs from Cloudflare Browser Rendering's API. No Durable Objects, Queues or live updates: nothing to patch, and the API behaves the same locally as deployed. |
+| ⚙️  | **Invoices:** Coord owns the invoice documents and the math; Stripe Checkout collects payment   | Branded client portal like proposals; retainers and time lines; QuickBooks sync                                                                                                                                                                                                                                                                                                                     |
+| ⚙️  | **Order:** Client Onboarding, then Payments, then Procurement, then Time & Billing              | As PLAN.md                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Ground rules (enforced, not aspirational)
 
@@ -69,31 +69,32 @@ New requirements for the rebuild:
    - One logger that takes an allow-list of fields, like the serializers. Client details never reach it; a test fails if they do.
    - Error responses carry a code and a safe message only. Details stay in server logs, without client data.
    - Every endpoint has a permission and audience; API tests cover another studio, a missing role and an expired session.
+   - SQL injection: every value reaches Postgres as a bound parameter through Drizzle's query builder or its `sql` tag. Lint bans `sql.raw` and string-built SQL. Sort columns and filters come from a Zod enum mapped to columns, never from raw input. The app's database role cannot change the schema or bypass RLS.
 
 ## Vetted dependencies
 
-| Dependency                           | Purpose                                       | Maintained by                                     | Why it passes                                                                          |
-| ------------------------------------ | --------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| TypeScript, Node 22 LTS              | Language                                      | Microsoft / OpenJS                                | Standard                                                                               |
-| Hono                                 | API routing                                   | Core team, sponsored by Cloudflare                | Native to Workers, widely used                                                         |
-| Zod                                  | Schemas                                       | Colin McDonnell plus core team                    | Ubiquitous                                                                             |
-| Drizzle ORM + drizzle-kit            | Typed SQL and migrations                      | Drizzle Team (company)                            | Active, large adoption; one schema source generates the migrations. Fallback: Kysely   |
-| Better Auth                          | Auth                                          | Better Auth Inc. plus the Auth.js team            | Most active TS auth library; Expo plugin                                               |
-| Postgres (Neon) via Hyperdrive       | Database                                      | Databricks / Cloudflare                           | Managed, proven                                                                        |
-| PGlite                               | Local and test Postgres                       | ElectricSQL (company)                             | Already proven in M0–M2 tests                                                          |
-| `stripe` official SDK                | Payments                                      | Stripe                                            | Idempotency keys, API version pinning, `constructEventAsync` on Workers                |
-| TanStack Query and Router            | Data and routing on web; Query also on native | TanStack (company and sponsors)                   | Proven                                                                                 |
-| TanStack Virtual                     | Virtualized grids                             | TanStack                                          | Proven                                                                                 |
-| React 19, Vite                       | Web                                           | Meta / VoidZero                                   | Standard                                                                               |
-| Expo SDK, Expo Router, EAS           | Native app                                    | Expo (company)                                    | The standard React Native path                                                         |
-| react-native-mmkv                    | Native cache and offline queue                | Margelo (company)                                 | Proven, fast                                                                           |
-| Postmark                             | Email                                         | ActiveCampaign                                    | Deliverability                                                                         |
-| Cloudflare Browser Rendering         | PDFs (HTML → Chromium)                        | Cloudflare                                        | Same HTML/CSS as the share page; most proven PDF approach                              |
-| Vitest, fast-check, StrykerJS        | Unit, property and mutation tests             | Vitest team / dubzzz plus sponsors / Stryker team | All active for years                                                                   |
-| Playwright                           | Web e2e and visual tests                      | Microsoft                                         | Proven                                                                                 |
-| Maestro                              | Native e2e                                    | mobile.dev (company)                              | Simpler and less flaky than Detox; active                                              |
-| Storybook (web and React Native)     | Component gallery                             | Chromatic plus community                          | Larger maintainer base than Ladle                                                      |
-| ESLint, Prettier, dependency-cruiser | Code quality                                  | OpenJS / Prettier team / long-lived (since 2016)  | Proven. Biome was rejected for now: younger plugin ecosystem, and no boundaries plugin |
+| Dependency                           | Purpose                                     | Maintained by                                     | Why it passes                                                                          |
+| ------------------------------------ | ------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| TypeScript, Node 22 LTS              | Language                                    | Microsoft / OpenJS                                | Standard                                                                               |
+| Hono                                 | API routing                                 | Core team, sponsored by Cloudflare                | Runs on Node, widely used                                                              |
+| Zod                                  | Schemas                                     | Colin McDonnell plus core team                    | Ubiquitous                                                                             |
+| Drizzle ORM + drizzle-kit            | Typed SQL and migrations                    | Drizzle Team (company)                            | Active, large adoption; one schema source generates the migrations. Fallback: Kysely   |
+| Better Auth                          | Auth                                        | Better Auth Inc. plus the Auth.js team            | Most active TS auth library; Expo plugin                                               |
+| Postgres (Neon)                      | Database                                    | Databricks                                        | Managed, proven                                                                        |
+| PGlite                               | Local and test Postgres                     | ElectricSQL (company)                             | Already proven in M0–M2 tests                                                          |
+| `stripe` official SDK                | Payments                                    | Stripe                                            | Idempotency keys, API version pinning, signature verification built in                 |
+| TanStack Query and Router            | Data and routing on web                     | TanStack (company and sponsors)                   | Proven                                                                                 |
+| TanStack Virtual                     | Virtualized grids                           | TanStack                                          | Proven                                                                                 |
+| React 19, Vite                       | Web                                         | Meta / VoidZero                                   | Standard                                                                               |
+| Expo SDK, Expo Router, EAS           | Native app (after beta)                     | Expo (company)                                    | The standard React Native path                                                         |
+| react-native-mmkv                    | Native cache and offline queue (after beta) | Margelo (company)                                 | Proven, fast                                                                           |
+| Postmark                             | Email                                       | ActiveCampaign                                    | Deliverability                                                                         |
+| Cloudflare Browser Rendering         | PDFs (HTML → Chromium)                      | Cloudflare                                        | Same HTML/CSS as the share page; no Chromium to bundle                                 |
+| Vitest, fast-check, StrykerJS        | Unit, property and mutation tests           | Vitest team / dubzzz plus sponsors / Stryker team | All active for years                                                                   |
+| Playwright                           | Web e2e and visual tests                    | Microsoft                                         | Proven                                                                                 |
+| Maestro                              | Native e2e (after beta)                     | mobile.dev (company)                              | Simpler and less flaky than Detox; active                                              |
+| Storybook                            | Component gallery (React Native after beta) | Chromatic plus community                          | Larger maintainer base than Ladle                                                      |
+| ESLint, Prettier, dependency-cruiser | Code quality                                | OpenJS / Prettier team / long-lived (since 2016)  | Proven. Biome was rejected for now: younger plugin ecosystem, and no boundaries plugin |
 
 ## Repo layout (fresh start)
 
@@ -110,14 +111,14 @@ packages/
   money/      exact integer money kernel (no deps)
   domain/     pure business rules: pricing, totals, status machines, time billing, allocation
   contract/   endpoint definitions + query-key factory + audiences (zod)
-  data/       TanStack Query hooks: queries + useCommand (shared web + native)
-  tokens/     design tokens → CSS vars (web) + theme object (native)
+  data/       TanStack Query hooks: queries + useCommand (web now, native later)
+  tokens/     design tokens → CSS vars (web); a native theme object after beta
   ui-web/     atoms / molecules / organisms (DOM + CSS), Storybook
-  ui-native/  same component APIs in React Native, Storybook RN
+  ui-native/  after beta: same component APIs in React Native, Storybook RN
 apps/
-  api/        Hono on Workers: implement(endpoint), domains/*, jobs/*, share pages
+  api/        Hono on Node (Vercel Functions): implement(endpoint), domains/*, jobs/*, share pages
   web/        React + Vite SPA (full power-user app)
-  mobile/     Expo app (field work: timer, time, My Day, schedules)
+  mobile/     after beta: Expo app (field work: timer, time, My Day, schedules)
 docs/         patterns.md, adr/, dependencies.md, money-policy.md, features/<group>/<slice>.md
 ```
 
@@ -138,7 +139,7 @@ export const updateItem = endpoint({
 });
 ```
 
-`keys` is a typed key factory. The server broadcasts these keys and the client invalidates the same ones, so stale-key bugs can't happen. Responses are always the entity, or `{ items, nextCursor }` for lists.
+`keys` is a typed key factory. After a command succeeds, the client invalidates exactly these keys, so stale-key bugs can't happen. Responses are always the entity, or `{ items, nextCursor }` for lists.
 
 **2. The server wrapper.** It does everything except the domain logic:
 
@@ -147,7 +148,7 @@ export const updateItem = endpoint({
 - checks permission;
 - opens an RLS transaction (a read-only fast path for GETs);
 - binds `audit()` to that transaction;
-- writes jobs and invalidations to an **outbox** in the same transaction, then delivers them after commit;
+- writes jobs to an **outbox** in the same transaction, then delivers them after commit;
 - serializes by audience.
 
 ```ts
@@ -167,7 +168,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 
 - Reads: `useQuery(queries.project(id))`.
 - Writes: **one** `useCommand(endpoint, { optimistic })`. It handles cancel → snapshot → apply → rollback → invalidate from the contract, a global error toast, the 401 redirect, and `celebrate()` only after the server confirms.
-- Live events are ignored when they are this client's own echo (a per-tab client id).
+- No live updates for now: queries refetch when the window regains focus, so a teammate's changes show up when you come back to a tab.
 - Persisted cache: a version number that discards old caches ("buster") plus an allow-list of what gets saved.
 - Routes load lazily.
 
@@ -182,20 +183,20 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 
 **7. Atomic design.**
 
-- **Tokens:** one source, compiled to CSS custom properties and a native theme object.
+- **Tokens:** one source, compiled to CSS custom properties (and a native theme object once the native app exists).
 - **Atoms:** Button, IconButton, Input, Select, Checkbox, Pill/StatusBadge, Chip, Avatar, Thumb, Skeleton, Kbd, Text/Heading, Stack/Row.
 - **Molecules:** Field, SearchInput, SegmentedControl, Tabs, Menu/Popover, Toast, StatTile, InlineEdit, ConfirmButton, ColorPicker.
 - **Organisms:** DataTable (virtualized), Drawer (focus trap), Dialog, PageHeader, CommandPalette, RoomGroup, EmptyState.
 - **Fun primitives:** `celebrate()`, a microcopy registry, paint scopes.
 - Every component appears in Storybook and has a visual snapshot.
-- `ui-web` and `ui-native` share prop names. Logic lives in shared headless hooks, such as `useTimer` and `useScheduleView`.
+- When `ui-native` arrives after beta, it shares `ui-web`'s prop names. Logic lives in shared headless hooks, such as `useTimer` and `useScheduleView`.
 
 **8. Auth.**
 
 - Better Auth tables are managed by drizzle-kit. Its organization equals our studio; the active organization becomes `app.studio_id` for RLS.
 - Roles map to our permission table in `domain/roles`.
-- Web uses httpOnly cookies, and the Origin/CSRF check applies to cookie requests only. Native uses a bearer token stored in SecureStore.
-- Rate limits live in a Durable Object, keyed by IP plus email.
+- Web uses httpOnly cookies, and the Origin/CSRF check applies to cookie requests only. The native app (after beta) will use a bearer token stored in SecureStore; the session resolver in `implement()` is the one place that changes.
+- Rate limits live in a Postgres table, keyed by IP plus email.
 - "Sign out this device" and "sign out everywhere".
 - No social login at launch: App Store rule 4.8 would otherwise require Sign in with Apple.
 - Outside parties (clients, vendors, contractors) use HMAC share links. Actions that need accountability are verified with an email code (atomic attempt counter, constant-time compare).
@@ -204,16 +205,16 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 
 - Each document type has one server-side **document view model**: procurement proposal, invoice, PO, schedule.
 - The share page and the PDF render the **same** HTML template from that model, with a CSP header.
-- The PDF comes from Browser Rendering and is cached in R2 by content hash.
+- The PDF comes from Cloudflare Browser Rendering's API and is cached in R2 by content hash. Fallback: Chromium inside a Vercel Function.
 - Tests extract the PDF text and assert that every number equals the model.
 - **Contracts are the one exception.** The studio's uploaded PDF is the template, so values are written onto a copy of it rather than rendered from HTML. This is a new pattern, so slice D1 needs a decision record and your approval. Tests still extract the PDF text and compare every value.
 
 **10. Jobs.**
 
-- The outbox flows into Queues. External calls (Stripe, Postmark, QuickBooks) **never** run inside a DB transaction, and each carries an idempotency key equal to our row id.
-- Cron runs reminders and the nightly reconciliation.
+- The outbox is delivered right after commit, in the same request through `waitUntil`. Vercel Cron sweeps it every minute for anything left, claiming rows with `FOR UPDATE SKIP LOCKED` and retrying with backoff. External calls (Stripe, Postmark, QuickBooks) **never** run inside a DB transaction, and each carries an idempotency key equal to our row id.
+- Vercel Cron runs reminders and the nightly reconciliation.
 
-**11. Native app versioning.**
+**11. Native app versioning (after beta).**
 
 - Contract changes are additive only, with deprecation before removal.
 - The app sends an `x-app-version` header. Below the minimum version, the API returns `426 update_required`, which the app handles gracefully.
@@ -262,7 +263,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 5. The webhook path:
    - verify the signature;
    - insert the raw event (event id unique, so duplicates are dropped);
-   - put it on the queue;
+   - write it to the outbox;
    - process it under a row lock with forward-only status.
 6. Mismatched amounts or currency go to **needs_review** with an alert.
 7. Refunds, disputes and late ACH returns are mirrored back into Coord.
@@ -293,22 +294,21 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 6. Page or screen built only from those components.
 7. End-to-end tests:
    - Playwright on desktop and at mobile web width;
-   - Maestro on iOS and Android when the slice touches the native app.
+   - Playwright at phone width for every field screen (Maestro on iOS and Android once the native app exists).
 8. Performance budgets: 200 KB JS and 30 KB CSS gzipped on the initial route; API p95 under 200 ms; navigation from cache under 100 ms.
 9. **Self-review.** Claude reviews the slice's diff for bugs, logic errors, privacy and security issues, and query counts, and fixes what it finds.
 10. **A demo for you.** Then merge, update the pattern registry, and move to the next slice.
 
-## Phases and slices (in order; 💰 = money gate, 📱 = native work)
+## Phases and slices (in order; 💰 = money gate, 📱 = field work, built for phone browsers)
 
 **Phase 0: Foundations**
 0.1 Fresh repo, tooling, CI, boundaries, budgets.
 0.2 💰 Money kernel and money policy document.
 0.3 Contract, `implement()`, errors, query-budget helper.
 0.4 DB: drizzle-kit schema, RLS, outbox, audit, test harness (PGlite plus real Postgres in CI).
-0.5 Live updates (Durable Object per studio, echo filter).
-0.6 Tokens and core atoms in Storybook, web and native.
-0.7 Web shell: router, lazy routes, persisted cache, command palette.
-0.8 📱 Expo shell: tabs, theme, MMKV cache, EAS builds, version gate, Maestro smoke test.
+0.5 Tokens and core atoms in Storybook.
+0.6 Web shell: router, lazy routes, persisted cache, command palette.
+0.7 📱 Phone web: installable web app (manifest and icons), phone layout for the field screens, Playwright at phone width.
 
 **A. Studio & People**
 A1 📱 Sign up, sign in, email code, password reset.
@@ -316,7 +316,7 @@ A2 Studios, switching studios, roles.
 A3 Invitations.
 A4 Studio settings and branding.
 A5 Audit log viewer.
-A6 📱 Devices: sign out this phone; account deletion (an Apple requirement).
+A6 📱 Devices: sign out this device; account deletion.
 A7 Studio setup questions: how the studio charges, deposits and reimbursables (PLAN.md 6.10).
 
 **B. Directory**
@@ -358,20 +358,19 @@ F9 📱 Receiving and damage, with phone photos.
 F10 💰 Vendor deposits and bills.
 
 **G. Time & Billing**
-G1 📱 Timer: start time held on the server, one running timer per user, live across devices, offline queue with idempotency.
+G1 📱 Timer: start time held on the server, one running timer per user, the same timer on every device, idempotent start and stop.
 G2 📱 Manual entries and week view.
 G3 💰 Hourly rates and billing increments, plus flat fees for studios that use them.
 G4 💰 Reimbursables and expenses, for studios that turn them on.
 G5 💰 Invoices built from the studio's setup answers: billable time, flat fees, reimbursables, product changes, any deposit applied.
 G6 💰 Invoice portal, PDF, Stripe payment.
 G7 💰 QuickBooks Online sync, idempotent, with a sync log.
-G8 📱 Lock-screen timer: iOS Live Activity and Android ongoing notification.
-G9 Project hours and the "past the deposit" marker (PLAN.md 6.9).
+G8 Project hours and the "past the deposit" marker (PLAN.md 6.9).
 
 **H. Schedules & Approvals**
 H1 Schedule types and tag codes, suggested and editable.
 H2 Issued revisions with changes marked.
-H3 📱 Schedules on the phone, cached offline.
+H3 📱 Schedules readable on a phone browser.
 H4 Contractor link and PDF.
 H5 Approvals that block ordering.
 
@@ -387,7 +386,16 @@ J2 💰 Profit and AR reports.
 J3 Accessibility pass.
 J4 Load tests.
 J5 Full security review (each slice already gets its own in step 9).
-J6 📱 App Store and Play readiness: privacy labels, no in-app subscription purchase.
+J6 Beta launch: onboarding the first studios, feedback loop.
+
+**After beta: Native app** (when studios need offline use or push notifications)
+N1 📱 Expo shell: tabs, theme, MMKV cache, EAS builds, version gate (pattern 11), Maestro smoke test.
+N2 📱 Bearer-token sign-in with SecureStore; sign out this phone.
+N3 📱 Timer offline queue and lock-screen timer (iOS Live Activity, Android ongoing notification).
+N4 📱 Schedules cached offline; receiving photos from the camera.
+N5 📱 App Store and Play readiness: privacy labels, Apple's account-deletion rule, no in-app subscription purchase.
+
+**Later, when a workflow needs it:** live updates, as a Server-Sent Events channel per studio carrying query keys only (never data), with Postgres `LISTEN/NOTIFY` once there is more than one server.
 
 ## Verification
 
@@ -400,7 +408,7 @@ J6 📱 App Store and Play readiness: privacy labels, no in-app subscription pur
   - API tests on PGlite and real Postgres;
   - Playwright desktop and mobile;
   - the budget check.
-- **Mobile slices:** `maestro test apps/mobile/e2e` on the iOS simulator and the Android emulator, plus an EAS preview build installed on a real phone for the demo.
+- **Native slices (after beta):** `maestro test apps/mobile/e2e` on the iOS simulator and the Android emulator, plus an EAS preview build installed on a real phone for the demo.
 - **Money phases:** run the golden fixtures through both the domain function and the API.
   - D–E: complete a real deposit end to end in Stripe test mode, including:
     - a replayed webhook;

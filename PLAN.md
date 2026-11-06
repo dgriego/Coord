@@ -268,17 +268,17 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 | Share pages | Server-rendered by the API (lightweight HTML, very little JS), never cached at the edge | Clients open links on phones and need the first view to be instant |
 | API | Hono on Node, zod-validated typed routes (or tRPC) | Fast, simple, runs on the edge or on Node |
 | Database | Postgres (Neon or Supabase) + Drizzle ORM; `pg_trgm` and full-text search for search | One datastore, RLS, adequate search for the MVP |
-| Jobs | A Postgres outbox delivered by a queue (Cloudflare Queues in the rebuild plan) | No extra datastore |
+| Jobs | A Postgres outbox worked by the API process | No extra datastore |
 | Files / images | Cloudflare R2 + Cloudflare Images (or imgproxy) | Cheap storage and on-the-fly AVIF and WebP |
 | PDFs | Same React components rendered to HTML, then Playwright/Chromium in a worker | One template system for screen and PDF |
 | Contract PDFs | Show the studio's PDF in the browser to place fields; write the values onto a copy of it on the server | The studio's layout stays intact. Libraries are vetted in the first contract brief (section 15, item 9). |
-| Real-time | Server-Sent Events channel per studio that pushes entity invalidations | Simple and fits through proxies |
+| Real-time | None for now; screens refetch on window focus. Later, if a workflow needs it: a Server-Sent Events channel per studio that pushes entity invalidations | No workflow needs it yet (Nov 6, 2026) |
 | Auth | Better Auth (organizations, invitations, passkeys) or WorkOS | Multi-tenant, with SSO possible later |
 | Email | Postmark for transactional and outbound documents; inbound parsing later | Reliable delivery for POs and invoices |
 | Payments | Stripe Connect (Express or Standard) + Stripe Elements / Checkout | See section 11 |
 | E-sign | Built-in click-to-sign (typed name, timestamp, IP, document hash) for the MVP, on Coord's own documents and on contracts studios upload; Dropbox Sign or DocuSign later if needed | ESIGN Act–compliant for contracts and procurement proposals |
 | Clipper | Chrome extension (Manifest V3); Safari later | Reads schema.org/Open Graph data, with parsers per vendor site for the top vendors |
-| Hosting | API and workers on Fly.io or Render; static assets and the CDN on Cloudflare | Simple operations at this stage |
+| Hosting | Vercel: the API as Vercel Functions, the web app on its CDN; files on Cloudflare R2 (decided Nov 6, 2026) | Full Node, a preview link per branch, nothing to patch |
 | Observability | Sentry, with client data scrubbed. OpenTelemetry and real-user monitoring wait until beta traffic needs them | Enough to find errors without another system |
 
 **Leaving room for local-first:** all reads go through TanStack Query keyed by normalized entity IDs, and all writes go through a single mutation layer. Moving to a sync engine (Zero, Replicache or ElectricSQL) later replaces that layer, not the screens.
@@ -297,7 +297,7 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 ### 9.2 Cache layers
 | Layer | What | How it's invalidated |
 |---|---|---|
-| Browser: query cache | All entities fetched, persisted to IndexedDB | Show cached data then refresh in the background; SSE pushes invalidations by ID. Cleared on logout or role change. |
+| Browser: query cache | All entities fetched, persisted to IndexedDB | Show cached data then refresh in the background; Refetched when the window regains focus. Cleared on logout or role change. |
 | Browser: prefetch | Route loaders, plus hover or focus on project links | Same as above |
 | CDN | Static assets and transformed images | Cached permanently by file hash |
 | Generated files | PDFs keyed by a hash of document version, branding and audience | Regenerated only when the hash changes |
