@@ -1,0 +1,12 @@
+#!/bin/sh
+# Nothing is committed until format, lint, typecheck and the tests for what changed pass.
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+echo "$staged" | tr '\n' '\0' | xargs -0 npx prettier --check --ignore-unknown
+code=$(echo "$staged" | grep -E '\.(ts|tsx|js)$' || true)
+[ -n "$code" ] && echo "$code" | tr '\n' '\0' | xargs -0 npx eslint --max-warnings 0 --no-warn-ignored
+npm run --silent typecheck
+npx vitest run --changed --passWithNoTests

@@ -10,6 +10,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "typecheck": "tsc -b",
     "lint": "eslint --max-warnings 0 .",
     "boundaries": "depcruise packages apps",

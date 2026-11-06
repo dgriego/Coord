@@ -1,0 +1,8 @@
+#!/bin/sh
+# Before code leaves the machine: lint everything (so code that imports a change is checked
+# too), import boundaries, and the full test suite with coverage. Mutation tests stay in CI.
+set -e
+
+npm run --silent lint
+npm run --silent boundaries
+npm run --silent test

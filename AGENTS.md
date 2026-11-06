@@ -45,12 +45,16 @@ Money accuracy is a hard gate. After that, when these pull against each other, e
 - Named exports only. A package's `src/index.ts` is its only re-export file; no other barrels.
 - Validate external data where it crosses a trust boundary (request bodies, webhooks, uploads,
   environment variables), once, and pass typed values inward. Code inside trusts its types.
-- No `as` casts to silence the compiler, no chained assertions (`as unknown as T`), no `any`,
-  and no parameter typed `unknown` except at a trust boundary. The one allowed `as` is inside a
-  branded type's checked constructor, such as `cents()` in `packages/money`.
+- No `as` casts to silence the compiler, no `any`, and no parameter typed `unknown` except at a
+  trust boundary. A branded type's checked constructor, such as `cents()` in `packages/money`,
+  is the usual place an `as` belongs.
 - Don't write code you weren't asked for: no fallback branches for cases that can't happen, no
   `?? {}` or conditional spreads to dodge a type, no comments that restate the code.
-- Functions up to 40 lines, files up to 250. Lint enforces both.
+- Functions up to 40 lines, files up to 250.
+- Lint enforces these where a machine can: the anti-slop rules in `eslint.config.js` reject
+  chained casts, `unknown` parameters, conditional spreads, empty-object fallbacks, default
+  exports and re-exports outside `src/index.ts`. A trust-boundary function that must take
+  `unknown` disables the rule on that line with a reason after `--`.
 
 ## Which tests to write
 
@@ -63,9 +67,10 @@ Money accuracy is a hard gate. After that, when these pull against each other, e
 
 ## Commits
 
-- Nothing is committed until lint, typecheck and the tests for what changed pass:
-  `npm run typecheck && npm run lint && npx vitest run <changed paths>`. A slice also needs the
-  full `npm run ci` before its demo.
+- Nothing is committed until format, lint, typecheck and the tests for what changed pass. The
+  pre-commit hook in `.githooks` runs them on staged files; the pre-push hook lints everything
+  and runs the full test suite with coverage. `npm install` turns the hooks on. Never skip them
+  with `--no-verify`. A slice also needs the full `npm run ci` before its demo.
 - One reviewable step per commit (see priority 6).
 - Subject: imperative, sentence case, no prefix, under 72 characters, saying what changed for
   the product ("Make schedule tags editable"). Body: why, and anything a reviewer must know.
