@@ -9,7 +9,7 @@ This is the top-down plan to settle before writing code. Each section either rec
 | # | Decision | What it means for the build |
 |---|---|---|
 | D1 | **The accounting system is the source of truth for the books.** We don't build accounting. | We own items, contracts, procurement proposals, POs, time and invoices as *documents*. Invoices, payments and bills sync to QuickBooks Online (QBO), which owns the ledger, tax filing and the P&L. No general ledger, bank reconciliation or payroll. |
-| D2 | **No formal submittals.** | Replaced by a light **Approvals** feature (see 6.6) covering CFAs, shop drawings and slab or sample approvals. |
+| D2 | **No formal submittals.** | Replaced by a light **Approvals** feature (see 6.6) covering shop drawings and slab or sample approvals. CFAs (cuttings for approval) are part of procurement (see 6.3). |
 | D3 | **US only.** | USD only, US sales-tax model, US date and number formats. Money is stored in integer cents with a currency column (always USD for now) so other currencies can be added later. |
 | D4 | **We process client payments** through Stripe Connect. | See section 11 for compliance. |
 | D5 | **Receiving and warehouses are in scope.** | Receiving locations, receiving records, damage tracking. Full inventory accounting is out of scope. |
@@ -48,6 +48,7 @@ Priority: **M** = MVP, **L** = later.
 | Add a new client, fill in the contract, and send it to sign and pay any deposit | M |
 | Create a project from a template (phases and tasks) in under a minute | M |
 | Clip products from vendor sites into a project room | M |
+| Save favorite products (sofas, lamps, fabrics) to a studio product library and pull them into any project | L |
 | Generate a procurement proposal by room, with pricing and freight, send it as a link, client approves and pays in full online | M |
 | Turn approved items into POs grouped by vendor with one click | M |
 | Track time from her phone between site visits and bill it on the next invoice | M |
@@ -70,7 +71,8 @@ Priority: **M** = MVP, **L** = later.
 |---|---|
 | One project view showing phase, tasks, items awaiting approval and late orders | M |
 | Revise a procurement proposal after the client changes their mind, with version history kept | M |
-| Send approval requests (CFA, shop drawings) to the client or herself | M |
+| Approve a fabric CFA against her memo sample before the vendor cuts and ships |
+| Send approval requests (shop drawings, samples) to the client or herself | M |
 | Issue a lighting or plumbing schedule to the contractor and send revisions with changes marked | M |
 | Log site visits with photos and a punch list during CA | L |
 
@@ -160,7 +162,7 @@ Studio ─┬─ User (role) ─ TimeEntry
                     ├─ Phase ─ Task (→ optional Item link)
                     ├─ Item ─┬─ ItemComponent (main piece, COM fabric, trim, freight…)
                     │        ├─ ItemImage, ItemAttachment
-                    │        ├─ Approval (CFA, shop drawing, sample)
+                    │        ├─ Approval (shop drawing, sample)
                     │        └─ ScheduleEntry (optional, one per schedule)
                     ├─ Contract ─ ContractVersion (→ TemplateVersion; field values, frozen PDF, signature)
                     ├─ ProcurementProposal ─ ProposalVersion ─ ProposalLine (snapshot of Item pricing)
@@ -198,11 +200,11 @@ Studio ─┬─ User (role) ─ TimeEntry
 
 6.1 **Sourcing:** clip, choose the project and room, the app guesses vendor, price and dimensions, the user confirms, the item is added as a draft.
 6.2 **Procurement proposal to payment:** select furniture and material items, generate a proposal version with pricing and freight, send the share link, the client approves lines (email code), e-signs and pays 100% of the approved lines. Items move to `paid`, a payment is recorded and synced to QBO, and a task "Order approved items" is created.
-6.3 **Order:** nothing is ordered until the client has paid. "Generate POs" groups the paid components by vendor. The studio reviews, then sends by email with a PDF and vendor link. The vendor acknowledges and enters a ship date. A vendor deposit is recorded and the bill syncs to QBO.
+6.3 **Order:** nothing is ordered until the client has paid. "Generate POs" groups the paid components by vendor. The studio reviews, then sends by email with a PDF and vendor link. The vendor acknowledges and enters a ship date. For fabric, the vendor sends a **CFA** (cutting for approval): a cutting from the current dye lot. The designer compares it with her memo sample and approves or rejects it on the PO line, and the fabric isn't cut or shipped until it is approved. A COM fabric PO ships to the workroom named on its component. A vendor deposit is recorded and the bill syncs to QBO.
 6.4 **Tracking:** an automatic follow-up task appears if a PO is unacknowledged after N days or past its ship date. The procurement board shows everything by status.
 6.5 **Receiving:** the warehouse or studio records a receipt with photos. Damage leads to a claim and a task. Delivery and install close out the item.
-6.6 **Approvals (submittals-lite):** attach a CFA, shop drawing or slab photo to an item. Request approval from the client (link) or a designer (internally). Outcome is `approved`, `approved as noted` or `revise and resubmit`. The item can't be ordered until required approvals clear.
-6.7 **Schedules:** add specified items to the lighting or plumbing schedule. Tag codes such as L-1 are assigned automatically. "Issue revision" freezes a snapshot. The contractor link always shows the latest revision with changes marked, and a PDF is generated.
+6.6 **Approvals (submittals-lite):** attach a shop drawing, sample or slab photo to an item. Request approval from the client (link) or a designer (internally). Outcome is `approved`, `approved as noted` or `revise and resubmit`. The item can't be ordered until required approvals clear.
+6.7 **Schedules:** add specified items to the lighting or plumbing schedule. Tag codes such as L-1 are suggested automatically and stay editable, so they can match the tags on the designer's floor plan. "Issue revision" freezes a snapshot. The contractor link always shows the latest revision with changes marked, and a PDF is generated.
 6.8 **Billing:** what goes on an invoice follows the studio's setup answers (6.10): billable time, flat fees and reimbursables where the studio uses them, and product changes, such as a freight adjustment when freight came in above or below the proposal. Any deposit is applied to billable time only. Send the link, the client pays, and it syncs to QBO.
 6.9 **Client onboarding:** added with the lead designer on Nov 3, 2026. The money rules are in `docs/money-policy.md` section 5. The decisions still needed are items 9 to 11 in section 15.
 
@@ -222,7 +224,7 @@ Studio ─┬─ User (role) ─ TimeEntry
 
 
 ### Submittals compared with designer approvals
-In commercial construction a *submittal* is the contractor formally submitting shop drawings, product data and samples to the architect or designer for approval, tracked in a numbered log. Residential designers don't keep that log, but they make the **same kind of approval decisions** constantly: fabric CFAs, upholstery and millwork shop drawings from workrooms, stone slab selection, paint drawdowns, tile samples, lighting cut sheets. The **Approvals** feature covers this, and it can block an order until approval is given, which prevents costly reorders. A formal log can be added later if commercial users need one.
+In commercial construction a *submittal* is the contractor formally submitting shop drawings, product data and samples to the architect or designer for approval, tracked in a numbered log. Residential designers don't keep that log, but they make the **same kind of approval decisions** constantly: upholstery and millwork shop drawings from workrooms, stone slab selection, paint drawdowns, tile samples, lighting cut sheets. Fabric CFAs are similar but happen after the order is placed, so they live in procurement (6.3). The **Approvals** feature covers this, and it can block an order until approval is given, which prevents costly reorders. A formal log can be added later if commercial users need one.
 
 ---
 
@@ -361,9 +363,9 @@ Each milestone ends with something beta studios can use, and has to meet its exi
 | M0 | **Foundations** | Monorepo, CI, auth, studios and invitations, roles, RLS, design system (tokens, grid, forms, command palette), performance budgets in CI, SSE invalidation, audit log, deploy pipeline | A user can sign up, create a studio and invite a member. The empty app shell meets its budgets. |
 | M1 | **Catalog** | Clients, vendors (categories, filters), projects, rooms, items, components, images, pricing engine plus fixture tests, Chrome clipper v1, CSV import | Clip to an item in under 10 s. Pricing tests pass for markup, margin, MSRP, COM, tax and freight cases. |
 | M2 | **Client onboarding and payments** | Contract upload, field placement, values per project, deposit calculation, frozen contract PDF, client share link, e-sign, Stripe Connect setup, deposit payments (card and ACH), refunds and reconciliation | A real client signs a contract made from a studio's own PDF and pays the deposit end to end in Stripe test mode. Every value on the signed copy matches Coord's data. |
-| M3 | **Procurement** | Procurement proposals (generated from items with pricing and freight, versions, branded PDF, client share link, approve or reject per line, e-sign, payment in full), cost-hiding serializer tests, generate POs by vendor, PO PDF and email, vendor share link (acknowledge, ship date, tracking, invoice upload), procurement board, follow-up automations, receiving and damage, vendor deposits and bills | A real client approves a proposal and pays in full in Stripe test mode. No cost field leaks (automated tests). The COM sofa produces 2 correct POs and its status rolls up from both. |
+| M3 | **Procurement** | Procurement proposals (generated from items with pricing and freight, versions, branded PDF, client share link, approve or reject per line, e-sign, payment in full), cost-hiding serializer tests, generate POs by vendor, PO PDF and email, vendor share link (acknowledge, ship date, tracking, invoice upload, CFA), procurement board, follow-up automations, receiving and damage, vendor deposits and bills | A real client approves a proposal and pays in full in Stripe test mode. No cost field leaks (automated tests). The COM sofa produces 2 correct POs and its status rolls up from both. |
 | M4 | **Time and billing** | Timer and manual time, rates, flat and hourly fees, reimbursables, invoices, retainers, QBO connection and sync | Invoices, payments and bills appear correctly in a QBO sandbox. Re-syncing creates no duplicates. |
-| M5 | **Schedules and approvals** | Schedule types, automatic tag codes, issued revisions with changes marked, contractor link, PDF; the Approvals feature blocking orders | The contractor link shows the latest revision with marked changes on a phone. |
+| M5 | **Schedules and approvals** | Schedule types, suggested and editable tag codes, issued revisions with changes marked, contractor link, PDF; the Approvals feature blocking orders | The contractor link shows the latest revision with marked changes on a phone. |
 | M6 | **Project flow** | Phases (Consultation, Schematic, Design Development, Construction Administration), tasks linked to items, templates, "My day" dashboard, project health view | A new project from a template is ready in under 1 minute. Item events create and close tasks. |
 | M7 | **Beta hardening** | DesignSmart and Programa import mappings, profit-per-project report, accessibility pass, load tests, security review, studio setup checklist | 5 beta studios run real projects for 4 weeks. Performance budgets hold in RUM. |
 

@@ -347,7 +347,7 @@ F3 Approve or reject per line, and sign using D5.
 F4 💰 Proposal PDF.
 F5 💰 Payment in full on approved lines, using the E2 checkout. Nothing is ordered until the client has paid.
 F6 💰 POs per vendor from components.
-F7 Vendor link: acknowledge, ship date, tracking, invoice upload.
+F7 Vendor link: acknowledge, ship date, tracking, invoice upload, CFA cuttings.
 F8 Procurement board and follow-ups.
 F9 📱 Receiving and damage, with phone photos.
 F10 💰 Vendor deposits and bills.
@@ -364,7 +364,7 @@ G8 📱 Lock-screen timer: iOS Live Activity and Android ongoing notification.
 G9 Project hours and the "past the deposit" marker (PLAN.md 6.9).
 
 **H. Schedules & Approvals**
-H1 Schedule types and tag codes.
+H1 Schedule types and tag codes, suggested and editable.
 H2 Issued revisions with changes marked.
 H3 📱 Schedules on the phone, cached offline.
 H4 Contractor link and PDF.
@@ -406,4 +406,5 @@ J6 📱 App Store and Play readiness: privacy labels, no in-app subscription pur
     Reconciliation must report zero differences.
 
   - G: QuickBooks sandbox re-sync creates no duplicates; PDF text matches the view model.
+
 - **Long-running work:** builds, test suites and agents run in the background and are checked rather than waited on blindly. Anything running past its expected time is investigated or stopped, and you are told.
