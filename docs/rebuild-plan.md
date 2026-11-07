@@ -69,13 +69,13 @@ New requirements for the rebuild:
    - One logger that takes an allow-list of fields, like the serializers. Client details never reach it; a test fails if they do.
    - Error responses carry a code and a safe message only. Details stay in server logs, without client data.
    - Every endpoint has a permission and audience; API tests cover another studio, a missing role and an expired session.
-   - SQL injection: every value reaches Postgres as a bound parameter through Drizzle's query builder or its `sql` tag. Lint bans `sql.raw` and string-built SQL. Sort columns and filters come from a Zod enum mapped to columns, never from raw input. The app's database role cannot change the schema or bypass RLS.
+   - SQL injection: every value reaches Postgres as a bound parameter through Drizzle's query builder or its `sql` tag. Lint bans `sql.raw` and string-built SQL. Sort columns and filters come from a Zod enum mapped to columns, never from raw input. The app's database role cannot change the schema or bypass RLS. Neon's default role is a member of `neon_superuser`, which bypasses RLS, so the app connects as its own role and tables use `FORCE ROW LEVEL SECURITY`.
 
 ## Vetted dependencies
 
 | Dependency                           | Purpose                                     | Maintained by                                     | Why it passes                                                                          |
 | ------------------------------------ | ------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| TypeScript, Node 22 LTS              | Language                                    | Microsoft / OpenJS                                | Standard                                                                               |
+| TypeScript, Node 24 LTS              | Language                                    | Microsoft / OpenJS                                | Standard                                                                               |
 | Hono                                 | API routing                                 | Core team, sponsored by Cloudflare                | Runs on Node, widely used                                                              |
 | Zod                                  | Schemas                                     | Colin McDonnell plus core team                    | Ubiquitous                                                                             |
 | Drizzle ORM + drizzle-kit            | Typed SQL and migrations                    | Drizzle Team (company)                            | Active, large adoption; one schema source generates the migrations. Fallback: Kysely   |
@@ -152,7 +152,7 @@ export const updateItem = endpoint({
 - serializes by audience.
 
 ```ts
-export default implement(updateItem, async ({ params, body, tx, audit }) => {
+export const updateItemHandler = implement(updateItem, async ({ params, body, tx, audit }) => {
   const before = await items.find(tx, params.itemId);
   const after = await items.update(tx, params.itemId, body);
   await audit("item.updated", before, after);
@@ -205,14 +205,14 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 
 - Each document type has one server-side **document view model**: procurement proposal, invoice, PO, schedule.
 - The share page and the PDF render the **same** HTML template from that model, with a CSP header.
-- The PDF comes from Cloudflare Browser Rendering's API and is cached in R2 by content hash. Fallback: Chromium inside a Vercel Function.
+- The PDF comes from Cloudflare Browser Rendering's API and is cached in R2 by content hash. The API sends the rendered HTML itself, never a share-link URL, so no link token reaches a third party or its logs. Fallback: Chromium inside a Vercel Function.
 - Tests extract the PDF text and assert that every number equals the model.
 - **Contracts are the one exception.** The studio's uploaded PDF is the template, so values are written onto a copy of it rather than rendered from HTML. This is a new pattern, so slice D1 needs a decision record and your approval. Tests still extract the PDF text and compare every value.
 
 **10. Jobs.**
 
 - The outbox is delivered right after commit, in the same request through `waitUntil`. Vercel Cron sweeps it every minute for anything left, claiming rows with `FOR UPDATE SKIP LOCKED` and retrying with backoff. External calls (Stripe, Postmark, QuickBooks) **never** run inside a DB transaction, and each carries an idempotency key equal to our row id.
-- Vercel Cron runs reminders and the nightly reconciliation.
+- Vercel Cron runs reminders and the nightly reconciliation. Cron routes are public URLs, so each one checks `Authorization: Bearer $CRON_SECRET` with a constant-time compare and is denied otherwise.
 
 **11. Native app versioning (after beta).**
 
@@ -225,13 +225,13 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 - **Types** (all integers; `Number.isSafeInteger` asserted):
   - `Cents`;
   - `Rate` in parts per million (8.875% = 88,750);
-  - `Qty` in thousandths (2.3 yd = 2,300);
+  - `Quantity` in thousandths (2.3 yd = 2,300);
   - `Seconds` for time.
-- **One primitive:** `mulDiv(a, b, divisor, rounding)` computed with BigInt internally.
+- **One primitive:** `multiplyAndDivide(a, b, divisor)` computed with BigInt internally.
   - Rounding is half away from zero; credits are symmetric.
-  - Markup = `mulDiv(cost, 1e6 + rate, 1e6)`. No float ever touches money.
-- **`allocate(total, weights)`** uses largest remainder, so tax or a discount split across lines always sums exactly.
-- **One `parseMoney`/`parseRate`/`parseQty`** for the web, the native app, the clipper and CSV import. Each has a table of accepted and rejected inputs ("1e3", "0x10", "1.250,00", 3 decimals, and so on). One `formatMoney` with a cached `Intl.NumberFormat`.
+  - Markup = `multiplyAndDivide(cost, 1e6 + rate, 1e6)`. No float ever touches money.
+- **`split(total, weights)`** uses largest remainder, so tax or a discount split across lines always sums exactly.
+- **One `parseMoney`/`parseRate`/`parseQuantity`** for the web, the native app, the clipper and CSV import. Each has a table of accepted and rejected inputs ("1e3", "0x10", "1.250,00", 3 decimals, and so on). One `formatMoney` with a cached `Intl.NumberFormat`.
 - **`docs/money-policy.md`** (you approve it) records where rounding happens for each document. It also covers:
   - how the optional contract deposit is calculated, applied and refunded;
   - paying procurement proposals in full;
@@ -244,7 +244,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
   - golden fixture tables, including every boundary found in the audit, plus spreadsheets from beta studios;
   - invariants after every API test: sum of lines = total; subtotal + tax = total; deposit applied plus refunds never exceeds the deposit paid; paid ≤ due, or else flagged;
   - **100% branch coverage** on `money` and `domain`;
-  - **StrykerJS mutation score of at least 90%** on those packages.
+  - **StrykerJS mutation score of at least 95%** on those packages (target 100%).
 - **Database guards:**
   - CHECK constraints on every money and rate column;
   - a trigger that blocks changes to sent or signed versions and issued invoices;
@@ -280,7 +280,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
    - schema;
    - endpoints;
    - money rules;
-   - mobile impact;
+   - phone browser impact;
    - test plan;
    - the "fun moment";
    - the demo script.
@@ -307,7 +307,7 @@ export default implement(updateItem, async ({ params, body, tx, audit }) => {
 0.3 Contract, `implement()`, errors, query-budget helper.
 0.4 DB: drizzle-kit schema, RLS, outbox, audit, test harness (PGlite plus real Postgres in CI).
 0.5 Tokens and core atoms in Storybook.
-0.6 Web shell: router, lazy routes, persisted cache, command palette.
+0.6 Web shell: router, lazy routes, persisted cache, command palette, bundle budget check in CI.
 0.7 📱 Phone web: installable web app (manifest and icons), phone layout for the field screens, Playwright at phone width.
 
 **A. Studio & People**

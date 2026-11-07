@@ -5,6 +5,10 @@ on:
     branches: [main, "claude/**"]
   pull_request:
 
+# CI only reads the repo; the token gets nothing more.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest

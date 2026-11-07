@@ -44,5 +44,5 @@ Coord is built one small slice at a time. Each slice:
 | Path        | What's there                                                                       |
 | ----------- | ---------------------------------------------------------------------------------- |
 | `packages/` | Shared code: money, domain rules, API contract, data hooks, design tokens, UI kits |
-| `apps/`     | The API, the web app and the mobile app                                            |
+| `apps/`     | The API and the web app (a native app comes after the beta)                        |
 | `docs/`     | Patterns, decisions (ADRs), vetted dependencies, feature briefs                    |

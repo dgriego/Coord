@@ -26,7 +26,7 @@ Money accuracy is a hard gate. After that, when these pull against each other, e
 4. **Test what can hurt.** Money and access get the deepest tests. For access, test every role
    against every endpoint, both allowed and denied, plus another studio's data and forbidden
    fields. For tokens: session and share-link tokens are random, stored only as hashes, sent in
-   httpOnly cookies or SecureStore, expire, can be revoked, and are never logged. Everything else
+   httpOnly cookies (SecureStore once the native app exists), expire, can be revoked, and are never logged. Everything else
    gets enough tests to change it safely.
 5. **No wasted queries.** A fixed query count per endpoint (the query budget), an index for
    every column a query filters, joins or sorts on, no query that reads a whole table to find a

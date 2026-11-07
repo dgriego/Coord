@@ -16,7 +16,7 @@ This is the top-down plan to settle before writing code. Each section either rec
 | D6 | **Outside parties use secure share links.** | No client, vendor or contractor accounts. Links are signed and revocable. Actions that need accountability (approve, pay, sign) are verified with an email code. |
 | D7 | **Target 1–10 person studios.** Must clearly beat DesignSmart. | Simple defaults, nothing gated behind add-on modules, and depth that can be turned on as needed rather than shown up front. |
 | D8 | **Integrate with design tools rather than building them.** | Mood boards and floor plans are links and embeds, plus image import. We build only the product clipper. |
-| D9 | **Local-first is optional.** | Build in this order: a cache stored in the browser, optimistic updates, real-time invalidation. Keep the data layer swappable for a sync engine later. |
+| D9 | **Local-first is optional.** | Build in this order: a cache stored in the browser, then optimistic updates. Real-time invalidation waits until a workflow needs it (Nov 6, 2026). Keep the data layer swappable for a sync engine later. |
 | D10 | **Client onboarding and procurement are separate.** (Nov 5, 2026) | Studios say "proposal" loosely, sometimes meaning the whole process of establishing a new client. In Coord, **client onboarding** means sending a new client the studio's contract to sign. A **procurement proposal** means priced furniture and materials for a client to approve, and any other "proposal" in this plan means one of these. |
 | D11 | **Contracts are the studio's own documents.** | Every studio's contract is different, so we don't standardize or write them, and Coord gives no legal advice. A studio uploads its own PDF and chooses the fields that change, then fills in those fields for each new client. |
 
@@ -257,8 +257,8 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 
 ### Decision: deploy on Vercel
 - The web app is static files on Vercel's CDN. The API is one Vercel Function, a Node handler built with the Build Output API (`npm run build:vercel`).
-- **Database:** hosted Postgres (Neon or Supabase) through `DATABASE_URL`. Migrations run during the build, not on cold start, so two instances never race.
-- **Live updates across instances:** Postgres `LISTEN/NOTIFY` replaces the in-memory event bus whenever `DATABASE_URL` is set.
+- **Database:** Neon Postgres through `DATABASE_URL`. Migrations run during the build, not on cold start, so two instances never race.
+- **Jobs:** a Postgres outbox delivered right after commit (`waitUntil`), plus a Vercel Cron sweep for retries. No queues, Durable Objects or Redis.
 - **Server cache:** off on Vercel, because instances don't share memory. The browser cache does most of the work. A server cache is added only when a measured endpoint needs one.
 
 | Layer | Choice | Why |
@@ -266,11 +266,11 @@ Asked: would a Rust backend maximize speed? For this product it wouldn't make a 
 | Language | TypeScript across the whole stack, npm workspaces monorepo | Types shared between client, server and PDF templates |
 | Web app | React + Vite SPA, TanStack Router, TanStack Query, TanStack Table with virtualization | App-like speed, loaders that prefetch per route, a fast grid |
 | Share pages | Server-rendered by the API (lightweight HTML, very little JS), never cached at the edge | Clients open links on phones and need the first view to be instant |
-| API | Hono on Node, zod-validated typed routes (or tRPC) | Fast, simple, runs on the edge or on Node |
-| Database | Postgres (Neon or Supabase) + Drizzle ORM; `pg_trgm` and full-text search for search | One datastore, RLS, adequate search for the MVP |
-| Jobs | A Postgres outbox worked by the API process | No extra datastore |
+| API | Hono on Node, Zod-validated endpoint contracts (rebuild plan, pattern 1) | Fast, simple, runs as a Vercel Function and locally the same way |
+| Database | Neon Postgres + Drizzle ORM; `pg_trgm` and full-text search for search | One datastore, RLS, adequate search for the MVP |
+| Jobs | A Postgres outbox delivered after commit, swept by Vercel Cron | No extra datastore or queue |
 | Files / images | Cloudflare R2 + Cloudflare Images (or imgproxy) | Cheap storage and on-the-fly AVIF and WebP |
-| PDFs | Same React components rendered to HTML, then Playwright/Chromium in a worker | One template system for screen and PDF |
+| PDFs | The share page's HTML template, rendered to PDF by Cloudflare Browser Rendering's API | One template system for screen and PDF, no Chromium to run |
 | Contract PDFs | Show the studio's PDF in the browser to place fields; write the values onto a copy of it on the server | The studio's layout stays intact. Libraries are vetted in the first contract brief (section 15, item 9). |
 | Real-time | None for now; screens refetch on window focus. Later, if a workflow needs it: a Server-Sent Events channel per studio that pushes entity invalidations | No workflow needs it yet (Nov 6, 2026) |
 | Auth | Better Auth (organizations, invitations, passkeys) or WorkOS | Multi-tenant, with SSO possible later |

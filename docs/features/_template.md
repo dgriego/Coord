@@ -1,7 +1,7 @@
 # <Slice id>: <Name>
 
 > Status: Draft → **Approved** → Built → Demoed
-> Money gate: yes/no · Native app: yes/no
+> Money gate: yes/no · Field work on phones: yes/no
 
 ## Why
 
@@ -39,9 +39,9 @@ The rounding, allocation or invariants this slice depends on, with links to `doc
 
 Which client data this slice touches, who can see it, and what is logged (ids only).
 
-## Mobile impact
+## Phone browser impact
 
-What the native app gets, if anything.
+Which screens field staff use on a phone browser, and how they lay out at phone width.
 
 ## New dependencies
 
